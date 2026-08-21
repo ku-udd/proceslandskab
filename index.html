@@ -516,6 +516,7 @@ const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return 
 const lsDel=k=>{try{localStorage.removeItem(k);}catch(e){}};
 let db={areas:[],mains:[],subs:[],unitsUdd:[],unitsAdm:[],unitsFak:[],procesejere:[],driftejere:[],kapabiliteter:[],delkapabiliteter:[],leaderteams:[],workgroups:[]};
 let navnOpslag={};   /* id → navn, kun i hukommelsen */
+let funkOpslag={};   /* id → funktion, kun i hukommelsen (fallback-visning når navnet mangler) */
 const OWNER_REGS=['procesejere','driftejere'];
 
 /* Rollerne på en delproces — hver rolle henter sine værdier i ét eller flere registre */
@@ -1796,14 +1797,16 @@ function importNavne(file){
   readXlsx(file,wb=>{
       /* ALLE faner med kolonnerne ID og Navn læses og lægges sammen (fx "Navne" + én fane pr. enhed) */
       const toJson=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});
-      const map={};let n=0;
+      const map={},fmap={};let n=0;
       wb.SheetNames.forEach(nm=>{
         const rs=toJson(nm);
         if(!rs.length||!('ID'in rs[0])||!('Navn'in rs[0]))return;
-        rs.forEach(x=>{const id=str(x['ID']),navn=str(x['Navn']);if(id&&navn){map[id]=navn;n++;}});
+        rs.forEach(x=>{const id=str(x['ID']),navn=str(x['Navn']),funk=str(x['Funktion']);
+          if(id&&navn){map[id]=navn;n++;}
+          if(id&&funk)fmap[id]=funk;});
       });
       if(!n)throw new Error('ingen faner med kolonnerne ID og Navn');
-      navnOpslag=map;
+      navnOpslag=map;funkOpslag=fmap;
       render();renderNavnStatus();
       if(drawerId&&!editBuf)renderDrawerView();else if(editBuf)renderRolesEdit();
   },err=>'Kunne ikke læse navnearket ('+err.message+'). Alle faner med kolonnerne ID og Navn læses — tjek at mindst én findes.');
@@ -2024,8 +2027,8 @@ const parseAAV=v=>{if(typeof v==='number')return v;const n=parseFloat(String(v==
 const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--warn)':st==='inaktiv'?'var(--over)':'var(--muted)';return `<span class="status-dot" style="background:${c}"></span>`;};
 function blankUnit(){return {members:[],teams:[],plans:{},log:[]};}
 /* ledere gemmes som ID — navnet slås op i navnearket (fallback: id'et/teksten selv) */
-const uLeaderName=id=>id?(navnOpslag[id]||id):'';
-const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(id=>navnOpslag[id]||id).join(', ');
+const uLeaderName=id=>id?(navnOpslag[id]||funkOpslag[id]||id):'';
+const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(id=>navnOpslag[id]||funkOpslag[id]||id).join(', ');
 const curUnit=()=>unitDb[enhedOpen]||blankUnit();
 const uCanEdit=()=>canEditEnhed(enhedOpen);
 const newUid=p=>p+Date.now().toString(36)+Math.floor(Math.random()*1e4);
