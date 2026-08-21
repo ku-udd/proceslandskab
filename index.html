@@ -2240,9 +2240,9 @@ function renderEnhedPage(){
     <input type="file" id="u-import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="if(this.files[0])uImportXLSX(this.files[0]);this.value=''">
   </div>
   <div class="kpis">
-    <div class="kpi"><div class="v">${kpiMains}<span style="color:var(--faint);font-weight:400"> / </span>${subs.length}<span style="color:var(--faint);font-weight:400"> / </span>${u.tasks.length}</div><div class="l">Hovedprocesser / delprocesser / opgaver</div></div>
+    <div class="kpi"><div class="v">${kpiMains}<span style="color:var(--faint);font-weight:400"> / </span>${subs.length}<span style="color:var(--faint);font-weight:400"> / </span>${u.tasks.length}</div><div class="l">Hovedprocesser / Delprocesser / Opgaver</div></div>
     <div class="kpi"><div class="v">${u.members.length}</div><div class="l">Medarbejdere</div></div>
-    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}<span style="color:var(--faint);font-weight:400"> / </span>${fmtAAV(kpiCap)}</div><div class="l">Planlagt ÅV / kapacitet</div></div>
+    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}<span style="color:var(--faint);font-weight:400"> / </span>${fmtAAV(kpiCap)}</div><div class="l">Planlagt / Samlet ÅV</div></div>
     <div class="kpi"><div class="v">${kpiBudget?fmtDKK(kpiBudget):'0 kr.'}</div><div class="l">Samlet budget</div></div>
   </div>`;
   h+=uState.view==='people'?uRenderPeople():uState.view==='tl'?uRenderTl():uRenderPlanList();
