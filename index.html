@@ -1807,7 +1807,7 @@ async function loadRole(){
 }
 const canEdit=()=>!!session&&!!userRole&&(userRole.role==='landskab'||userRole.role==='admin');
 const isAdmin=()=>!!session&&!!userRole&&userRole.role==='admin';
-const canEditEnhed=uid=>!!session&&!!userRole&&userRole.role==='enhed'&&userRole.enhed===uid;
+const canEditEnhed=uid=>!!session&&!!userRole&&(userRole.role==='admin'||(userRole.role==='enhed'&&userRole.enhed===uid));
 async function initAuth(){
   if(sb&&sbConfigured()){
     try{const {data}=await sb.auth.getSession();session=(data&&data.session)||null;}catch(e){}
