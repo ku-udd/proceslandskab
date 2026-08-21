@@ -434,10 +434,10 @@
   <header class="top">
     <div class="brand">
       <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
-      <h1>Proceslandskab</h1>
+      <h1 id="app-title">Proceslandskab</h1>
     </div>
     <div class="headrow">
-      <div class="ledelse">
+      <div class="ledelse" id="ledelse">
         <div><b>Vicedirektør:</b> Rie Snekkerup</div>
         <div><b>Uddannelseschefer:</b> Tina Lewis (Nørre), Trine Klitgaard Bro (Søndre) og Karen Rønnow (Frb+)</div>
       </div>
@@ -2088,6 +2088,8 @@ async function openEnhed(uid){
   uState={view:'plan',openAreas:new Set(),openMains:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
   const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
   if(tb)tb.style.display='none';if(seg)seg.style.display='none';
+  const ti=$('app-title'),le=$('ledelse');
+  if(ti)ti.style.display='none';if(le)le.style.display='none';
   $('view').innerHTML='<div class="empty-state"><b>Henter enhedens data …</b></div>';
   await loadUnit(uid);
   render();
@@ -2096,6 +2098,8 @@ function closeEnhed(){
   enhedOpen=null;uDrawerSub=null;uEditBuf=null;
   const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
   if(tb)tb.style.display='';if(seg)seg.style.display='';
+  const ti=$('app-title'),le=$('ledelse');
+  if(ti)ti.style.display='';if(le)le.style.display='';
   render();
 }
 function uSetView(v){uState.view=v;render();}
@@ -2111,7 +2115,6 @@ function renderEnhedPage(){
   const segBtn=(v,label)=>`<button role="tab" aria-selected="${uState.view===v}" onclick="uSetView('${v}')">${label}</button>`;
   let h=`<div class="uhead">
     <div>
-      <div class="ueyebrow">Enhed i UDD · Opgaveoverblik</div>
       <h2>${esc(anyName(uid))}</h2>
       <div class="usub">${u.sectionLeader?`Sektionsleder · <b>${esc(u.sectionLeader)}</b> · `:''}${plural(subs.length,'delproces','delprocesser')} hvor enheden er udførende (R)</div>
     </div>
