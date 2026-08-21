@@ -1,0 +1,2672 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proceslandskab & Opgaveoverblik · Uddannelsesadministrationen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F6F3; --surface:#FFFFFF; --surface-2:#FBFAF7;
+    --ink:#1C1A17; --muted:#6B6760; --faint:#9A958C;
+    --line:#E6E2DA; --line-strong:#D6D1C7;
+    --wine:#8A1C24; --wine-soft:#F3E6E6;
+    --ok:#2F8F5B; --warn:#C2891A; --over:#C0432B;
+    --radius:14px; --shadow:0 1px 2px rgba(28,26,23,.04),0 8px 24px rgba(28,26,23,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .app{max-width:1180px;margin:0 auto;padding:0 22px 90px}
+  button{font:inherit}
+
+  header.top{padding:24px 0 6px}
+  .headrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-top:7px}
+  .headrow .savestat{margin-left:auto}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--wine);font-weight:600}
+  .brand h1{font-family:'Spectral',serif;font-weight:600;font-size:27px;margin:2px 0 0;letter-spacing:-.01em}
+  .ledelse{font-size:12.5px;color:var(--muted);line-height:1.5;max-width:640px}
+  .ledelse b{color:var(--ink);font-weight:600}
+  .savestat{font-size:12px;min-width:110px;text-align:right;transition:.3s}
+  .savestat.saving{color:var(--muted)}
+  .savestat.saved{color:var(--ok)}
+  .savestat.error{color:var(--over);font-weight:600}
+
+  /* login — overlay der kun vises, når man vil redigere */
+  .login-screen{position:fixed;inset:0;z-index:90;background:rgba(28,26,23,.34);display:flex;align-items:center;justify-content:center;padding:22px}
+  .login-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.3);padding:30px 32px 28px;width:min(400px,100%)}
+  .login-card h1{font-family:'Spectral',serif;font-weight:600;font-size:24px;margin:3px 0 4px}
+  .login-card p{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .login-card label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:13px 0 5px}
+  .login-card input{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:9px;padding:10px 12px}
+  .login-card .btn{width:100%;justify-content:center;margin-top:18px;padding:11px}
+  .login-err{font-size:12.5px;color:var(--over);margin-top:11px;min-height:1em}
+
+  /* navne-status i Data-menuen */
+  .menu .menustat{font-size:11.5px;color:var(--faint);line-height:1.45;padding:4px 11px 8px;max-width:250px}
+  .menu .menustat.ok{color:#25603f}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--shadow)}
+  .seg button{border:0;background:transparent;font-size:13.5px;font-weight:500;color:var(--muted);padding:8px 15px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s}
+  .seg button:hover{color:var(--ink)}
+  .seg button[aria-selected="true"]{background:var(--wine);color:#fff;box-shadow:0 1px 2px rgba(138,28,36,.3)}
+  .seg .ic{width:15px;height:15px}
+
+  .toolbar{margin:0 0 20px;padding:11px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .tb-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .tb-row+.tb-row{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+  .toolbar select,.toolbar input[type=search]{font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;cursor:pointer}
+  .toolbar select{max-width:260px}
+  .toolbar input[type=search]{cursor:text;flex:1;min-width:220px;padding:9px 12px;font-size:14px}
+  .msel{position:relative;flex:1;min-width:180px}
+  .mselbtn{display:flex;align-items:center;gap:8px;width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;cursor:pointer;text-align:left}
+  .mselbtn:hover{border-color:var(--faint)}
+  .mselbtn .mtxt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mselbtn .cnt{flex:none;font-size:11px;font-weight:600;color:#fff;background:var(--wine);border-radius:20px;padding:1px 7px}
+  .msel.on .mselbtn{border-color:var(--wine);background:var(--wine-soft)}
+  .mselpanel{display:none;position:absolute;left:0;top:calc(100% + 5px);min-width:100%;max-width:340px;max-height:320px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:6px;z-index:60}
+  .msel.open .mselpanel{display:block}
+  .mselpanel label{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:7px;font-size:13px;cursor:pointer;line-height:1.35}
+  .mselpanel label:hover{background:var(--surface-2)}
+  .mselpanel input{margin:2px 0 0;accent-color:var(--wine);flex:none}
+  .mselgrp{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:9px 8px 3px}
+  .mselfoot{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);margin-top:5px;padding-top:5px}
+  .mselfoot button{border:0;background:none;color:var(--wine);font-size:12.5px;font-weight:500;cursor:pointer;padding:4px 8px;border-radius:6px}
+  .mselfoot button:hover{background:var(--wine-soft)}
+  .mselempty{font-size:12.5px;color:var(--faint);padding:8px}
+  .toolbar .lab{font-size:12px;color:var(--faint);font-weight:500}
+  .btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.12s}
+  .btn:hover{background:var(--surface-2)}
+  .btn.primary{background:var(--wine);border-color:var(--wine);color:#fff}
+  .btn.primary:hover{background:#73161d}
+  .btn.danger{color:var(--over);border-color:#e8cdc6}
+  .btn.danger:hover{background:#fbeae6}
+  .btn .ic{width:15px;height:15px}
+  .menu-wrap{position:relative}
+  .menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:6px;min-width:230px;z-index:50;display:none}
+  .menu.open{display:block}
+  .menu button{display:flex;width:100%;align-items:center;gap:9px;border:0;background:none;text-align:left;padding:9px 11px;border-radius:8px;font-size:13px;color:var(--ink);cursor:pointer}
+  .menu button:hover{background:var(--surface-2)}
+  .menu .sep{height:1px;background:var(--line);margin:5px 4px}
+
+
+  .areagroup{margin-bottom:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .ahead{display:flex;align-items:center;gap:13px;padding:15px 18px;cursor:pointer;user-select:none}
+  .ahead .swatch{width:11px;height:34px;border-radius:4px;flex:none}
+  .ahead .atitle{font-family:'Spectral',serif;font-size:19px;font-weight:600}
+  .ahead .ameta{color:var(--muted);font-size:12.5px;margin-top:1px}
+  .chev{color:var(--faint);transition:transform .2s}
+  .ahead .chev{margin-left:auto}
+  .shead .chev{flex:none}
+  .areagroup.collapsed .chev,.maincard:not(.open) .chev,.subgroup:not(.open) .chev{transform:rotate(-90deg)}
+  .areagroup.collapsed .awrap,.maincard:not(.open) .mwrap,.subgroup:not(.open) .swrap{display:none}
+  .awrap{padding:4px 12px 12px}
+
+  .maincard{border:1px solid var(--line);border-radius:11px;margin-top:8px;overflow:hidden;background:var(--surface-2)}
+  .mhead{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;user-select:none}
+  .mhead .mtitle{font-weight:600;font-size:14.5px}
+  .mhead .mtitlewrap{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+  .mhead .mmeta{color:var(--muted);font-size:12px}
+  .mwrap{background:var(--surface);border-top:1px solid var(--line)}
+  .colhead,.oprow{display:grid;grid-template-columns:26px 2fr 1.1fr 1.1fr 1.1fr 18px;gap:12px;align-items:center}
+  .movecol{display:flex;flex-direction:column;gap:1px;align-items:center}
+  .movecol button{border:0;background:none;cursor:pointer;color:var(--faint);padding:0;width:20px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+  .movecol button:hover{color:var(--ink);background:var(--surface-2)}
+  .movecol button:disabled{opacity:.22;cursor:default;background:none}
+  .colhead{padding:8px 16px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  .oprow{padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .oprow:last-child{border-bottom:0}
+  .oprow:hover{background:var(--surface-2)}
+  .opname{font-weight:500;font-size:13.5px}
+  .opname small{display:block;color:var(--faint);font-weight:400;font-size:11.5px;margin-top:1px}
+  .cellnames{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cellnames.empty{color:var(--faint)}
+  .cellicons{display:flex;align-items:center;min-height:23px;cursor:default}
+  .addsub{display:block;width:100%;text-align:left;border:0;background:none;color:var(--wine);font-size:12.5px;font-weight:500;padding:10px 16px;cursor:pointer;border-top:1px dashed var(--line)}
+  .addsub:hover{background:var(--wine-soft)}
+  .stack{display:flex;align-items:center}
+  .stack .avatar{margin-left:-6px;border:2px solid var(--surface)}
+  .stack .avatar:first-child{margin-left:0}
+  .avatar{width:23px;height:23px;border-radius:50%;background:var(--wine-soft);color:var(--wine);font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+  .avatar.more{background:var(--surface-2);color:var(--muted)}
+
+  .empty-state{text-align:center;color:var(--faint);padding:54px 20px;background:var(--surface);border:1px dashed var(--line-strong);border-radius:var(--radius)}
+  .empty-state b{color:var(--muted);display:block;font-size:14px;margin-bottom:5px}
+  .racitag{font-size:10px;font-weight:700;min-width:17px;height:17px;padding:0 4px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center}
+  .raci-A{background:#fbeaea;color:var(--wine)} .raci-R{background:#e7f1ea;color:var(--ok)}
+  .raci-C{background:#fbf2e0;color:var(--warn)} .raci-I{background:#eef0f2;color:#5b6b78}
+
+  .viewhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 0 14px}
+  .viewhead h2{font-family:'Spectral',serif;font-weight:600;font-size:17px;margin:0}
+  .viewhead .vh-sub{font-size:12.5px;color:var(--muted)}
+  .subgroup{border:1px solid var(--line);border-radius:12px;margin-top:9px;background:var(--surface-2);overflow:hidden}
+  .shead{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;user-select:none}
+  .shead .stitle{font-weight:600;font-size:14px}
+  .shead .smeta{color:var(--muted);font-size:12px;margin-top:1px}
+  .swrap{padding:2px 10px 10px;background:var(--surface);border-top:1px solid var(--line)}
+  .flatcard{margin-top:8px}
+  .flatcard>.mwrap{border-top:0}
+  .opname .racitag{margin-right:5px;vertical-align:1px}
+
+  .scrim{position:fixed;inset:0;background:rgba(28,26,23,.34);opacity:0;visibility:hidden;transition:.2s;z-index:70}
+  .scrim.open{opacity:1;visibility:visible}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,96vw);background:var(--paper);z-index:80;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);overflow-y:auto;box-shadow:-12px 0 40px rgba(0,0,0,.16)}
+  .drawer.open{transform:translateX(0)}
+  .dr-head{padding:20px 24px 15px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2}
+  .dr-head .crumb{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;line-height:1.5}
+  .dr-head h2{font-family:'Spectral',serif;font-size:21px;font-weight:600;margin:5px 0 0;line-height:1.22}
+  .dr-actions{display:flex;gap:8px;margin-top:12px}
+  .dr-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;font-size:17px;color:var(--muted);line-height:1}
+  .dr-close:hover{color:var(--ink)}
+  .dr-body{padding:4px 24px 70px}
+  .field{padding:15px 0;border-bottom:1px solid var(--line)}
+  .field .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:6px}
+  .field .v{font-size:14px}
+  .v.empty{color:var(--faint);font-style:italic}
+  .field.row2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--surface);border:1px solid var(--line-strong);border-radius:20px;padding:4px 11px;color:var(--ink)}
+  .raci-grid{display:flex;flex-direction:column;gap:11px}
+  .raci-line{display:flex;gap:10px;align-items:flex-start}
+  .raci-line .rl-key{flex:none;width:150px;font-size:12px;color:var(--muted);display:flex;gap:7px;align-items:flex-start}
+  .raci-line .rl-key b{display:block;color:var(--ink);font-size:12.5px;font-weight:600}
+  .raci-line .rl-people{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+  .raci-line .rl-none{font-size:12.5px;color:var(--faint);font-style:italic}
+
+  .frm label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:15px 0 6px}
+  .frm input[type=text],.frm input[type=number],.frm select,.frm textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px}
+  .frm textarea{resize:vertical;min-height:60px}
+  .frm .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .picker{border:1px solid var(--line-strong);border-radius:9px;padding:9px;background:var(--surface);margin-bottom:8px}
+  .picker .lbl{font-size:11.5px;color:var(--ink);margin-bottom:7px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .picker .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .picker .chips:empty{display:none}
+  .pchip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:3px 5px 3px 9px}
+  .pchip button{border:0;background:none;cursor:pointer;color:var(--faint);font-size:15px;line-height:1;padding:0 2px}
+  .pchip button:hover{color:var(--over)}
+  .iconbtn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;width:34px;height:34px;cursor:pointer;color:var(--muted);font-size:15px}
+  .iconbtn:hover{color:var(--over);border-color:#e8cdc6}
+  .iconbtn[disabled]{opacity:.4;cursor:not-allowed}
+  .addlink{font-size:12.5px;color:var(--wine);background:none;border:0;cursor:pointer;font-weight:500;padding:4px 0;margin-top:4px}
+  .addlink:hover{text-decoration:underline}
+
+  .modal{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;padding:44px 18px;z-index:85;background:rgba(28,26,23,.34)}
+  .modal.open{display:flex}
+  .modal .box{background:var(--paper);border-radius:16px;width:min(820px,100%);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal .mhd{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2}
+  .modal .mhd h3{font-family:'Spectral',serif;font-size:19px;margin:0;font-weight:600;flex:1}
+  .tabbar{display:flex;gap:4px 4px;padding:12px 22px 0;flex-wrap:wrap;row-gap:2px}
+  .tabbar .brk{flex-basis:100%;height:0}
+  .tabbar button{border:0;background:none;font-size:13.5px;font-weight:500;color:var(--muted);padding:8px 12px;border-radius:8px 8px 0 0;cursor:pointer;border-bottom:2px solid transparent}
+  .tabbar button.on{color:var(--wine);border-bottom-color:var(--wine)}
+  .modal .mbody{padding:14px 22px 24px}
+  .editline{display:grid;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .editline.area{grid-template-columns:14px 1fr 30px 30px 32px}
+  .editline.main{grid-template-columns:1.4fr 1fr 30px 30px 32px}
+  .iconbtn.mv:hover{color:var(--ink);border-color:var(--line-strong)}
+  .editline.unit{grid-template-columns:1fr auto 32px}
+  .editline.unit3{grid-template-columns:1fr 190px auto 32px}
+  .editline.unitm{grid-template-columns:1fr auto 30px 30px 32px}
+  .editline.unit3m{grid-template-columns:1fr 220px auto 30px 30px 32px}
+  .editline input,.editline select{font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--surface);width:100%}
+  .editline .em{font-size:12px;color:var(--faint);text-align:right}
+  .swatchsm{width:14px;height:14px;border-radius:4px}
+  .logline{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.45}
+  .logline .lt{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  .logline .lt small{display:block;color:var(--faint);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .logline .lm b{font-weight:600}
+
+  /* Liste-visning: regnearks-agtig bruttoliste — alle felter som kolonner, celler kan markeres, navigeres med piltaster og redigeres */
+  .listwrap{overflow:auto;max-height:calc(100vh - 250px);min-height:320px;font-size:11px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table.list{border-collapse:separate;border-spacing:0;font-size:11px;width:max-content}
+  table.list th{position:sticky;top:0;z-index:2;background:var(--surface-2);text-align:left;padding:3px 5px 4px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:bottom}
+  table.list th .lsort{all:unset;display:flex;align-items:center;gap:5px;width:100%;cursor:pointer;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--faint);font-weight:600;white-space:nowrap;padding:1px 0 3px}
+  table.list th .lsort:hover,table.list th .lsort.on{color:var(--wine)}
+  table.list th .lsort .arr{font-size:10px;opacity:.45}
+  table.list th .lsort.on .arr{opacity:1}
+  table.list th .lfilt{width:100%;box-sizing:border-box;font:inherit;font-size:11px;padding:2px 4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+  table.list th .lfilt:focus{outline:none;border-color:var(--wine)}
+  table.list th .lfilt.on{border-color:var(--wine);background:var(--wine-soft)}
+  table.list td{padding:3px 5px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;background:var(--surface);white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+  table.list tr:last-child td{border-bottom:0}
+  table.list .w-title{min-width:200px;max-width:260px}
+  table.list .w-std{min-width:120px;max-width:180px}
+  table.list .w-role{min-width:140px;max-width:200px}
+  table.list .w-note{min-width:280px;max-width:460px}
+  table.list .w-status{min-width:96px;max-width:120px}
+  .stag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600}
+  .stag.s-ny{background:#e2f0d9;color:#2f6a2a}.stag.s-aendret{background:#fff2cc;color:#7a5a00}.stag.s-uaendret{background:#ddebf7;color:#1f4e79}
+  /* de to første kolonner (åbn-knap + delprocesnavn) er frosset, så de altid kan ses og nås */
+  table.list .lact{min-width:0;width:26px;padding:2px 3px;border-right:0}
+  table.list .lfirst{position:sticky;left:0;z-index:1;width:30px;min-width:30px;box-sizing:border-box;border-right:0}
+  table.list .ltitle{position:sticky;left:30px;z-index:1;box-shadow:1px 0 0 var(--line)}
+  table.list th.lfirst,table.list th.ltitle{z-index:3;background:var(--surface-2)}
+  table.list td.lc{cursor:cell;outline:none}
+  table.list td.lc.active{outline:2px solid var(--wine);outline-offset:-2px;background:#fcf7f7;z-index:1}
+  table.list td.lc.active.ltitle{z-index:2}
+  table.list td.lc.editing{padding:1px 2px;background:var(--surface)}
+  table.list td.lc .lempty{color:var(--faint)}
+  table.list td.lc .lname{display:block}
+  table.list td.lc .lname+.lname{margin-top:1px}
+  table.list td.lc .lhint{color:var(--faint);font-style:italic}
+  table.list td.lc.ltitle{font-weight:500}
+  table.list td.lc input[type=text],table.list td.lc select{width:100%;box-sizing:border-box;font:inherit;font-size:11px;color:var(--ink);border:1px solid var(--wine);border-radius:5px;padding:2px 4px;background:var(--surface)}
+  table.list td.lc input[type=text]:focus,table.list td.lc select:focus{outline:none;box-shadow:0 0 0 2px var(--wine-soft)}
+  table.list td.lc select.ladd{color:var(--wine);font-weight:500;border-color:var(--line-strong)}
+  .lchips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px}
+  .lchips:empty{display:none}
+  .lchips .pchip{font-size:11px;padding:1px 3px 1px 7px}
+  .iconbtn.sm{width:22px;height:22px;font-size:13px;color:var(--faint);border-radius:6px}
+  .iconbtn.sm svg{width:12px;height:12px}
+  .iconbtn.sm.open:hover{color:var(--wine);border-color:var(--line-strong)}
+  .lreset{all:unset;cursor:pointer;font-size:12.5px;color:var(--wine);text-decoration:underline;text-underline-offset:2px}
+  .lcolbtn{padding:5px 10px;font-size:12px;border-radius:8px}
+  .lcolmenu{left:0;right:auto;min-width:240px;padding:8px 6px}
+  .lcolmenu .lcolhead{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:2px 10px 6px}
+  .lcolmenu .lcolrow{display:flex;align-items:center;gap:4px;padding:2px 4px 2px 6px;border-radius:7px}
+  .lcolmenu .lcolrow:hover{background:var(--surface-2)}
+  .lcolmenu label{display:flex;align-items:center;gap:9px;padding:3px 4px;flex:1;font-size:12.5px;cursor:pointer;min-width:0}
+  .lcolmenu label.fixed{color:var(--faint);cursor:default}
+  .lcolmenu .lcolhint{font-size:11px;color:var(--faint);padding:4px 10px 2px}
+  .lcolmenu .lcolrow[draggable]{cursor:grab}
+  .lcolmenu .lcolrow .lgrip{color:var(--faint);font-size:13px;line-height:1;letter-spacing:-1px;width:12px;flex:none;user-select:none}
+  .lcolmenu .lcolrow.dragging{opacity:.4}
+  .lcolmenu .lcolrow.drop-before{box-shadow:0 -2px 0 var(--wine)}
+  .lcolmenu .lcolrow.drop-after{box-shadow:0 2px 0 var(--wine)}
+  .lcolmenu input{margin:0;accent-color:var(--wine)}
+  .lcolmenu .lcolall{display:flex;gap:4px;padding:4px 4px 0;border-top:1px solid var(--line);margin-top:4px}
+  .lcolmenu .lcolall button{width:auto;flex:1;justify-content:center;padding:6px 8px;font-size:12px;color:var(--wine)}
+  .lkeys{font-size:11.5px;color:var(--faint);margin-left:auto}
+  .lkeys kbd{font:inherit;font-size:10.5px;border:1px solid var(--line-strong);border-radius:4px;padding:0 4px;background:var(--surface)}
+
+  /* ============ ENHEDSLAG (opgaveoverblik pr. UDD-enhed) ============ */
+  .pill.unitlink{cursor:pointer}
+  .pill.unitlink:hover{border-color:var(--wine);color:var(--wine)}
+  .unitopen{padding:6px 2px 2px}
+  .uhead{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;margin:2px 0 16px}
+  .uhead .ueyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--wine);font-weight:600}
+  .uhead h2{font-family:'Spectral',serif;font-weight:600;font-size:24px;margin:2px 0 0;letter-spacing:-.01em}
+  .uhead .usub{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .uhead .usub b{color:var(--ink);font-weight:600}
+  .ubar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 18px;padding:11px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .ubar select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;cursor:pointer;max-width:230px}
+  .ubar .spacer{flex:1}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px;box-shadow:var(--shadow)}
+  .kpi .v{font-family:'Spectral',serif;font-size:26px;font-weight:600;letter-spacing:-.01em}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .num{font-variant-numeric:tabular-nums}
+  .emptyhint{color:var(--faint);font-size:12px}
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .ucolhead,.uoprow{display:grid;grid-template-columns:26px 1.9fr 1fr .85fr .6fr .6fr 18px;gap:12px;align-items:center}
+  .ucolhead{padding:8px 16px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  .uoprow{padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .uoprow:last-child{border-bottom:0}
+  .uoprow:hover{background:var(--surface-2)}
+  .people{display:grid;grid-template-columns:1fr;gap:13px}
+  .pcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:15px 18px}
+  .pcard .ptop{display:flex;align-items:center;gap:13px}
+  .avatar.lg{width:40px;height:40px;font-size:14px}
+  .pcard .pname{font-weight:600;font-size:15.5px}
+  .team-h{font-family:Spectral;font-weight:600;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:9px;margin:24px 0 12px}
+  .team-h:first-child{margin-top:2px}
+  .team-h .team-dot{width:11px;height:11px;border-radius:3px;flex:none}
+  .team-h .team-sub{font-family:Inter;font-weight:400;font-size:12.5px;color:var(--faint)}
+  .pcounts{margin-left:auto;display:flex;gap:18px;text-align:right}
+  .pcounts .pc .n{font-family:'Spectral',serif;font-size:19px;font-weight:600}
+  .pcounts .pc .k{font-size:11px;color:var(--faint)}
+  .util{margin-left:auto;min-width:180px;text-align:right}
+  .util .bar{height:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:5px}
+  .util .bar i{display:block;height:100%;border-radius:6px}
+  .util .lab{font-size:12px;color:var(--muted)}
+  .ptags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .ptaska{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;cursor:pointer}
+  .ptaska:hover{border-color:var(--wine);color:var(--wine)}
+  .ptaska .ptaav{font-size:11px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+  .budgetbox{background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;padding:14px 16px}
+  .budgetbox .amt{font-family:'Spectral',serif;font-size:24px;font-weight:600}
+  .budgetbox .bn{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .pplhdr{display:grid;grid-template-columns:1fr 138px 72px 28px;gap:8px;font-size:11px;color:var(--muted);font-weight:600;padding:2px 2px 5px}
+  .pplrow{display:grid;grid-template-columns:1fr 138px 72px 28px;gap:8px;align-items:center;margin-bottom:7px}
+  .pplname{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}
+  .pplname .pnm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ppladd{margin-top:5px}
+  .editline.person{grid-template-columns:1fr 140px 70px 32px}
+  .editline.team{grid-template-columns:1fr auto 32px}
+  /* uge-grid + tidslinje (portet fra opgaveoverblikket) */
+  .wm{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--surface-2);vertical-align:middle}
+  .wm.lv1{background:var(--ok)} .wm.lv2{background:var(--warn)} .wm.lv3{background:var(--over)}
+  .wkmini{display:flex;gap:1px;height:14px;align-items:stretch;min-width:80px}
+  .wkmini .wm{flex:1 1 0;width:auto;min-width:0;height:auto;border-radius:1px}
+  .wkgrid{display:flex;flex-direction:column;gap:12px;margin:2px 0 6px}
+  .wkseg-l{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600}
+  .wkrow{display:flex;flex-wrap:wrap;gap:3px}
+  .wkc{width:25px;height:23px;border:1px solid var(--line);border-radius:5px;background:var(--surface);font-size:10px;color:var(--muted);cursor:pointer;padding:0;line-height:1}
+  .wkc:hover{border-color:var(--wine)}
+  .wkc.lv1{background:var(--ok);color:#fff;border-color:transparent}
+  .wkc.lv2{background:var(--warn);color:#3a2e00;border-color:transparent}
+  .wkc.lv3{background:var(--over);color:#fff;border-color:transparent}
+  .wkc.now{box-shadow:inset 0 0 0 2px var(--wine)}
+  .wklegend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--muted);align-items:center}
+  .wklegend span{display:inline-flex;align-items:center;gap:6px}
+  .wknotes{margin-top:11px;border-top:1px solid var(--line);padding-top:10px}
+  .wknrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .wknrow .wknw{font-size:11.5px;color:var(--muted);width:54px;flex:none}
+  .wknrow input{flex:1}
+  .wknadd{margin-top:4px}
+  .tl{display:flex;flex-direction:column;gap:16px;--tl-lw:210px}
+  .tl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .tl-tt{font-family:'Spectral',serif;font-weight:600;font-size:17px}
+  .tl-tt .tl-sub{font-family:Inter;font-weight:400;font-size:12.5px;color:var(--muted);margin-left:9px}
+  .tl-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  .tl-panel-note{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .tl-pg{margin-bottom:12px}
+  .tl-pg-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:7px}
+  .tl-all{margin-left:auto;border:1px solid var(--line);background:var(--surface-2);border-radius:7px;font-size:11px;color:var(--muted);padding:2px 8px;cursor:pointer}
+  .tl-all:hover{border-color:var(--wine);color:var(--wine)}
+  .tl-pg-items{display:flex;flex-wrap:wrap;gap:6px}
+  .tl-area{margin-bottom:16px}
+  .tl-people{margin:2px 0 16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .tl-people-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .tl-ptitle{font-size:14.5px;font-weight:600;color:var(--ink)}
+  .tl-opg-h{margin:4px 0 11px}
+  .tl-chk-n{font-style:normal;font-size:10.5px;color:var(--muted);margin-left:6px}
+  .tl-chk.on .tl-chk-n{color:var(--wine)}
+  .tl-area-h{display:flex;align-items:center;gap:8px;font-family:'Spectral',serif;font-weight:600;font-size:15px;margin-bottom:9px}
+  .tl-area-h .dot{width:11px;height:11px;border-radius:3px;flex:none}
+  .tl-area .tl-pg{padding-left:16px;border-left:2px solid var(--line);margin-left:4px}
+  .tl-main-h{font-size:12.5px;font-weight:600;color:var(--muted)}
+  .tl-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:4px 9px;cursor:pointer;max-width:100%}
+  .tl-chk.on{border-color:var(--wine);background:#fbeaea}
+  .tl-chk span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+  .tl-chk input{accent-color:var(--wine);flex:none}
+  .tl-chart{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  .tl-chart-h{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px}
+  .tl-row2{display:grid;grid-template-columns:var(--tl-lw) 1fr;gap:10px;align-items:center;margin-bottom:4px}
+  .tl-axisrow{margin-bottom:5px;border-bottom:1px solid var(--line);padding-bottom:4px}
+  .tl-label{font-size:12.5px;display:flex;align-items:center;gap:7px;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .tl-label .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .tl-label:hover{color:var(--wine)}
+  .tl-grp{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:8px 0 2px}
+  .tl-grp:first-child{margin-top:0}
+  .tl-empty{font-size:12.5px;color:var(--faint);padding:6px 0}
+  .tl-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .tlw{display:grid;gap:2px}
+  .tlw .wkc{width:auto;height:22px;font-size:11px;font-weight:500;border-radius:3px;cursor:default;padding:0;display:flex;align-items:center;justify-content:center}
+  .tlw-axis{height:14px;gap:0}
+  .tlw-m{font-size:10px;color:var(--muted);align-self:end;white-space:nowrap}
+  /* admin-modal */
+  .admrow{display:grid;grid-template-columns:1.4fr 150px 200px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .admrow input,.admrow select{font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--surface);width:100%}
+  .admrow .em{font-size:12px;color:var(--faint)}
+  @media(max-width:760px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .tl{--tl-lw:118px}
+    .ucolhead,.uoprow{grid-template-columns:26px 1.6fr 1fr 18px}
+    .uoprow .c-uwk,.uoprow .c-uaav,.uoprow .c-ubud,.ucolhead .c-uwk,.ucolhead .c-uaav,.ucolhead .c-ubud{display:none}
+  }
+
+  @media(max-width:760px){
+    .colhead,.oprow{grid-template-columns:26px 1.6fr 1fr 18px}
+    .oprow .c-lt,.oprow .c-de,.colhead .c-lt,.colhead .c-de{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  :focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="login-screen" id="login-screen" style="display:none">
+  <div class="login-card">
+    <button class="dr-close" id="login-close" aria-label="Luk">×</button>
+    <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
+    <h1>Log ind for at redigere</h1>
+    <p>Alle kan se alt — redigering kræver login. Din rolle afgør, om du kan redigere landskabets struktur eller din egen enheds opgaveoverblik.</p>
+    <label for="login-email">E-mail</label>
+    <input type="email" id="login-email" autocomplete="username" placeholder="navn@ku.dk">
+    <label for="login-pass">Kodeord</label>
+    <input type="password" id="login-pass" autocomplete="current-password">
+    <div class="login-err" id="login-err"></div>
+    <button class="btn primary" id="login-btn">Log ind</button>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
+      <h1>Proceslandskab</h1>
+    </div>
+    <div class="headrow">
+      <div class="ledelse">
+        <div><b>Vicedirektør:</b> Rie Snekkerup</div>
+        <div><b>Uddannelseschefer:</b> Tina Lewis (Nørre), Trine Klitgaard Bro (Søndre) og Karen Rønnow (Frb+)</div>
+      </div>
+      <span class="savestat" id="savestat" aria-live="polite"></span>
+      <button class="btn" id="btn-auth">Log ind</button>
+      <div class="seg" role="tablist" aria-label="Visning">
+      <button role="tab" data-view="landskab" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2.5 2.5 7.5 12 12.5l9.5-5z"/><path d="M2.5 12.5 12 17.5l9.5-5"/><path d="M2.5 17.5 12 22.5l9.5-5"/></svg>Emne</button>
+      <button role="tab" data-view="matrix" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>Tvær</button>
+        <button role="tab" data-view="enhed" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>Linje</button>
+        <button role="tab" data-view="liste" id="tab-liste" aria-selected="false" style="display:none"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg>Liste</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tb-row">
+    <input type="search" id="f-q" placeholder="Søg i delprocesser…" aria-label="Søg">
+    <button class="btn primary" id="btn-new"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Ny delproces</button>
+    <button class="btn" id="btn-settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Struktur & organisation</button>
+    <div class="menu-wrap">
+      <button class="btn" id="btn-data">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu" id="data-menu">
+        <button id="mi-export" onclick="exportXLSX()">Eksportér til Excel (.xlsx)</button>
+        <button id="mi-import" onclick="$('import-xlsx').click()">Importér fra Excel (.xlsx)</button>
+        <div class="sep" id="sep-data"></div>
+        <button onclick="closeMenu();$('import-navne').click()" id="btn-navne">Indlæs navne (Excel)</button>
+        <div class="menustat" id="navnstat"></div>
+        <div class="sep" id="sep-log"></div>
+        <button onclick="closeMenu();openLog()" id="mi-log">Seneste ændringer</button>
+        <div class="sep" id="sep-admin"></div>
+        <button onclick="closeMenu();openAdmin()" id="mi-admin">Brugere &amp; rettigheder</button>
+        <button onclick="migrateOld()" id="mi-migrate">Migrér fra gammel database</button>
+      </div>
+    </div>
+    <input type="file" id="import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+    <input type="file" id="import-navne" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+    </div>
+    <div class="tb-row tb-filters">
+      <span class="lab">Filtrér:</span>
+      <div class="msel" id="ms-area"></div>
+      <div class="msel" id="ms-lt"></div>
+      <div class="msel" id="ms-pe"></div>
+      <div class="msel" id="ms-unit"></div>
+    </div>
+  </div>
+
+  <main id="view"></main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div class="modal" id="settings"></div>
+<div class="modal" id="logmodal"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ============================================================
+   DATALAG + PERSISTENS
+   Struktur: procesområder → hovedprocesser → delprocesser (RACI + kapabilitet ligger på delprocessen).
+   Data ligger i Supabase i relationelle tabeller: areas / mains / subs / registry / landskab_log
+   (landskabet) og unit_* (enhedernes opgaveoverblik). Gemmes automatisk; localStorage er kun offline-nødkopi. Registrene procesejere/driftejere indeholder KUN id + funktion —
+   aldrig navne. Navne indlæses fra et Excel-ark og lever kun i hukommelsen (navnOpslag).
+   ============================================================ */
+const SUPABASE_URL='https://lwejqapnzkoldqyxunyk.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3ZWpxYXBuemtvbGRxeXh1bnlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NzA2NjIsImV4cCI6MjEwMjM0NjY2Mn0.G3TZzgTNim8SZX5Q8ZxmlFnpiMSklPfEahEpRTZ1cd4';
+const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+const sbConfigured=()=>SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('DIT-PROJEKT')&&!SUPABASE_ANON_KEY.includes('INDSAET');
+
+const STORE_KEY='ku-proceslandskab-v1';
+const clone=x=>JSON.parse(JSON.stringify(x));
+const $=id=>document.getElementById(id);
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}};
+const lsDel=k=>{try{localStorage.removeItem(k);}catch(e){}};
+let db={areas:[],mains:[],subs:[],unitsUdd:[],unitsAdm:[],unitsFak:[],procesejere:[],driftejere:[],kapabiliteter:[],delkapabiliteter:[],leaderteams:[],workgroups:[]};
+let navnOpslag={};   /* id → navn, kun i hukommelsen */
+const OWNER_REGS=['procesejere','driftejere'];
+
+/* Rollerne på en delproces — hver rolle henter sine værdier i ét eller flere registre */
+const ROLE_DEFS=[
+ {k:'PE',r:'A',label:'Procesejer',col:'Procesejer (A)',regs:['procesejere']},
+ {k:'DE',r:'A',label:'Driftsejere',col:'Driftsejer (A)',regs:['driftejere']},
+ {k:'RU',r:'R',label:'Udførende',col:'Udførende (R - UDDADM)',regs:['unitsUdd']},
+ {k:'RA',r:'R',label:'Udførende',col:'Udførende (R - Andre ADM)',regs:['unitsAdm']},
+ {k:'RF',r:'R',label:'Udførende',col:'Udførende (R - Fagmiljø)',regs:['unitsFak']},
+ {k:'C', r:'C',label:'Konsulteres',col:'Konsulteres (C)',regs:['unitsUdd','unitsAdm','unitsFak'],newReg:'unitsAdm'},
+ {k:'I', r:'I',label:'Informeres',col:'Informeres (I)',regs:['unitsUdd','unitsAdm','unitsFak'],newReg:'unitsAdm'}
+];
+const ROLE_KEYS=ROLE_DEFS.map(d=>d.k);
+const roleDef=k=>ROLE_DEFS.find(d=>d.k===k)||{k,r:'',label:k,col:k,regs:['unitsUdd']};
+const R_KEYS=['RU','RA','RF'];   /* de tre udførende roller hedder det samme — kilderegistret vises som undertekst */
+const roleHint=d=>R_KEYS.includes(d.k)?regLabelOf(d.regs[0]):'';
+/* Selvstændige registre — alle redigeres under Struktur & organisation */
+const REGS={
+  unitsUdd:{label:'Enheder i UDD',one:'enhed i UDD',pre:'u',sheet:'Enheder i UDD',placeholder:'Enhedens navn',kind:'unit',color:'#8A1C24'},
+  unitsAdm:{label:'Enheder - andre ADM-enheder',viewLabel:'Andre ADM-enheder',one:'enhed under andre ADM',pre:'ua',sheet:'Enheder - andre ADM',placeholder:'Enhedens navn',kind:'unit',color:'#2F6F8F'},
+  unitsFak:{label:'Enheder - FAK/Inst',viewLabel:'FAK/INST',one:'enhed under FAK/Inst',pre:'uf',sheet:'Enheder - FAK-Inst',placeholder:'Enhedens navn',kind:'unit',color:'#4F7A4A'},
+  procesejere:{label:'Procesejer',one:'procesejer',pre:'pe',sheet:'Procesejer',alt:['Procesejere','Ejere'],placeholder:'Funktion — ingen navne',kind:'owner',color:'#8A1C24'},
+  driftejere:{label:'Driftsejere',one:'driftsejer',pre:'de',sheet:'Driftsejere',alt:['Driftejere'],placeholder:'Funktion — ingen navne',kind:'owner',color:'#B5623A'},
+  kapabiliteter:{label:'Kapabilitet',one:'kapabilitet',pre:'ka',sheet:'Kapabilitet',placeholder:'Kapabilitetens navn',kind:'ref',color:'#2F6F8F'},
+  delkapabiliteter:{label:'Delkapabilitet',one:'delkapabilitet',pre:'dk',sheet:'Delkapabilitet',parent:'kapabiliteter',placeholder:'Delkapabilitetens navn',kind:'ref',color:'#4F7A4A'},
+  leaderteams:{label:'Lederteam',one:'lederteam',pre:'lt',sheet:'Lederteam',alt:['Lederteams'],placeholder:'Lederteamets navn',kind:'ref',color:'#7A5A8F'},
+  workgroups:{label:'Arbejdsfællesskab',one:'arbejdsfællesskab',pre:'af',sheet:'Arbejdsfællesskab',alt:['Arbejdsfællesskaber'],parent:'leaderteams',placeholder:'Arbejdsfællesskabets navn',kind:'ref',color:'#C2891A'}
+};
+const REG_KEYS=Object.keys(REGS);
+const UNIT_REGS=REG_KEYS.filter(k=>REGS[k].kind==='unit');
+/* Registre med manuel rækkefølge (pile i Struktur & organisation) — bruges i lister, dropdowns og filtre */
+const ORDERED_REGS=[...UNIT_REGS,'procesejere','driftejere','leaderteams','workgroups'];
+const byName=(a,b)=>a.name.localeCompare(b.name,'da');
+const regList=reg=>ORDERED_REGS.includes(reg)?[...db[reg]]:[...db[reg]].sort(byName);
+const regItem=(reg,id)=>(db[reg]||[]).find(x=>x.id===id);
+const regIndex=(reg,id)=>{const i=(db[reg]||[]).findIndex(x=>x.id===id);return i<0?9e8:i;};
+const regLabelOf=r=>REGS[r].viewLabel||REGS[r].label;
+const UNIT_KEYS=ROLE_DEFS.filter(d=>REGS[d.regs[0]].kind==='unit').map(d=>d.k);
+const OWNER_KEYS=ROLE_DEFS.filter(d=>REGS[d.regs[0]].kind==='owner').map(d=>d.k);
+/* Visningsnavn: for ejere vises navnet fra navnOpslag, hvis navnearket er indlæst — ellers funktionen */
+const regName=(reg,id)=>{const x=regItem(reg,id);if(!x)return '';return (OWNER_REGS.includes(reg)&&navnOpslag[id])?navnOpslag[id]:x.name;};
+/* Rå værdi (= funktionen for ejere) — bruges ved eksport, log og migrering, så navne aldrig havner i databasen eller eksportfilen */
+const rawRegName=(reg,id)=>{const x=regItem(reg,id);return x?x.name:'';};
+const regOf=id=>REG_KEYS.find(k=>(db[k]||[]).some(x=>x.id===id))||'';
+const anyName=id=>{const r=regOf(id);return r?regName(r,id):String(id||'');};
+const rawAnyName=id=>{const r=regOf(id);return r?rawRegName(r,id):String(id||'');};
+const regColor=id=>{const r=regOf(id);return (REGS[r]&&REGS[r].color)||'var(--faint)';};
+const regLabel=id=>{const r=regOf(id);return REGS[r]?regLabelOf(r):'Ukendt register';};
+const allUnitList=()=>UNIT_REGS.flatMap(r=>db[r]||[]);
+/* find/opret på navn; underregistre (delkapabilitet/arbejdsfællesskab) slås op inden for deres overordnede */
+function ensureReg(reg,name,parentId){
+  const key=String(name||'').trim();if(!key)return null;
+  const child=!!REGS[reg].parent;
+  let x=db[reg].find(y=>y.name.trim().toLowerCase()===key.toLowerCase()&&(!child||!parentId||!y.parent||y.parent===parentId));
+  if(!x){x={id:REGS[reg].pre+Date.now().toString(36)+Math.floor(Math.random()*1000),name:key};if(child)x.parent=parentId||'';db[reg].push(x);}
+  else if(child&&parentId&&!x.parent)x.parent=parentId;
+  return x;
+}
+const REF_FIELDS={leaderteams:'lederteam',workgroups:'arbfael',kapabiliteter:'kap',delkapabiliteter:'delkap'};
+function regUsed(reg,id){
+  const f=REF_FIELDS[reg];
+  return db.subs.filter(f?s=>s[f]===id:s=>ROLE_KEYS.some(k=>roleIds(s,k).includes(id))).length;
+}
+
+/* ÆNDRINGSLOG — db.log: [{t,who,msg}] (nyeste sidst). Beskeder må aldrig indeholde personnavne (brug rawAnyName). */
+const LOG_MAX=300;
+function logChange(msg){
+  if(!Array.isArray(db.log))db.log=[];
+  db.log.push({id:'lg'+Date.now().toString(36)+Math.floor(Math.random()*1e4),t:new Date().toISOString(),who:whoAmI(),msg:String(msg||'')});
+  if(db.log.length>LOG_MAX)db.log=db.log.slice(-LOG_MAX);
+}
+const whoAmI=()=>(session&&session.user&&session.user.email)||'';
+const qt=s=>'»'+String(s||'').trim()+'«';
+const dirWord=d=>d<0?'op':'ned';
+const modalBox=(title,close,body)=>`<div class="box"><div class="mhd"><h3>${title}</h3><button class="dr-close" style="position:static" onclick="${close}">×</button></div>${body}</div>`;
+function openLog(){
+  if(!canEdit())return showLogin();
+  const list=[...(db.log||[])].reverse();
+  const fmt=t=>{try{const d=new Date(t);return d.toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'})+' kl. '+d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});}catch(e){return t;}};
+  const rows=list.length?list.map(e=>`<div class="logline"><div class="lt">${esc(fmt(e.t))}${e.who?`<small title="${esc(e.who)}">${esc(e.who)}</small>`:''}</div><div class="lm">${esc(e.msg)}</div></div>`).join('')
+    :`<div style="font-size:13px;color:var(--faint);padding:8px 0">Ingen ændringer registreret endnu.</div>`;
+  $('logmodal').innerHTML=modalBox('Seneste ændringer','closeLog()',`<div class="mbody">${rows}<div style="font-size:11.5px;color:var(--faint);margin-top:12px">Viser de seneste ${LOG_MAX} ændringer. Loggen gemmes sammen med proceslandskabet.</div></div>`);
+  $('logmodal').classList.add('open');
+}
+function closeLog(){$('logmodal').classList.remove('open');}
+
+/* Relationel persistens: landskabet ligger i tabellerne areas / mains / subs / registry / landskab_log.
+   I hukommelsen bevares det velkendte db-objekt; ved gem beregnes forskellen mod sidst gemte
+   tilstand (landSnap), og kun ændrede rækker upsertes / slettede rækker fjernes. */
+const keyRows=rows=>{const m={};rows.forEach(r=>m[r.id]=JSON.stringify(r));return m;};
+const keyAll=cur=>{const o={};Object.keys(cur).forEach(t=>o[t]=keyRows(cur[t]));return o;};
+function landRows(){
+  const reg=[];REG_KEYS.forEach(r=>{(db[r]||[]).forEach((x,i)=>reg.push({id:x.id,reg:r,name:x.name,parent:x.parent||null,pos:i}));});
+  return {
+    areas:db.areas.map((a,i)=>({id:a.id,name:a.name,pos:i})),
+    mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i})),
+    subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i})),
+    registry:reg,
+    landskab_log:(db.log||[]).map(e=>({id:e.id,t:e.t,who:e.who||null,msg:e.msg}))
+  };
+}
+let landSnap=null;
+/* skriv forskellen mellem current (tabel→rækker) og snap; scopeCol/scopeVal begrænser sletninger (enhedstabeller) */
+async function syncTables(current,snap,scopeCol,scopeVal){
+  const out={};
+  for(const t of Object.keys(current)){
+    const cur=keyRows(current[t]),old=(snap&&snap[t])||{};
+    const ups=current[t].filter(r=>old[r.id]!==JSON.stringify(r));
+    const dels=Object.keys(old).filter(id=>!(id in cur));
+    if(ups.length){const {error}=await sb.from(t).upsert(ups,{onConflict:'id'});if(error)throw new Error(t+': '+error.message);}
+    if(dels.length){let q=sb.from(t).delete().in('id',dels);if(scopeCol)q=q.eq(scopeCol,scopeVal);const {error}=await q;if(error)throw new Error(t+': '+error.message);}
+    out[t]=cur;
+  }
+  return out;
+}
+/* planIndex: delproces-id → Set af enheds-id'er med planlægningsdata (bruges til advarsler og badges) */
+let planIndex={};
+async function loadPlanIndex(){
+  planIndex={};
+  if(!sb)return;
+  try{const {data,error}=await sb.from('unit_plans').select('sub_id,enhed');if(error)throw error;
+    (data||[]).forEach(r=>{(planIndex[r.sub_id]=planIndex[r.sub_id]||new Set()).add(r.enhed);});}catch(e){console.warn('Kunne ikke hente plan-oversigt:',e);}
+}
+const planUnits=sid=>[...(planIndex[sid]||[])];
+const planCountFor=uid=>Object.values(planIndex).filter(s=>s.has(uid)).length;
+async function loadDb(){
+  let loaded=false;
+  if(sb){
+    try{
+      const names=['areas','mains','subs','registry','landskab_log'];
+      const res=await Promise.all(names.map(t=>sb.from(t).select('*').order(t==='landskab_log'?'t':'pos',{ascending:true})));
+      for(const r of res)if(r.error)throw r.error;
+      const [ar,mn,su,rg,lg]=res.map(r=>r.data||[]);
+      const nd={
+        areas:ar.map(x=>({id:x.id,name:x.name})),
+        mains:mn.map(x=>({id:x.id,area:x.area||'',title:x.title})),
+        subs:su.map(x=>({id:x.id,main:x.main||'',title:x.title,kap:x.kap||'',delkap:x.delkap||'',lederteam:x.lederteam||'',arbfael:x.arbfael||'',roles:x.roles||{},status:x.status||'',note:x.note||''})),
+        log:lg.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}))
+      };
+      REG_KEYS.forEach(r=>nd[r]=[]);
+      rg.forEach(x=>{if(nd[x.reg])nd[x.reg].push(REGS[x.reg]&&REGS[x.reg].parent?{id:x.id,name:x.name,parent:x.parent||''}:{id:x.id,name:x.name});});
+      db=nd;loaded=true;
+    }catch(e){console.warn('Kunne ikke hente fra Supabase:',e);}
+    await loadPlanIndex();
+  }
+  if(!loaded){const v=lsGet(STORE_KEY);if(v){db=v;setSaveStatus('error');}}
+  normalizeDb();
+  if(loaded){lsSet(STORE_KEY,db);landSnap=keyAll(landRows());}
+}
+let saveSeq=0;
+async function saveDb(){
+  if(!canEdit())return;
+  const my=++saveSeq;
+  setSaveStatus('saving');
+  lsSet(STORE_KEY,db);
+  if(!sb){if(my===saveSeq)setSaveStatus('error');return;}
+  try{
+    landSnap=await syncTables(landRows(),landSnap);
+    if(my===saveSeq)setSaveStatus('saved');
+  }catch(e){
+    console.warn('Kunne ikke gemme til Supabase:',e);
+    if(my===saveSeq)setSaveStatus('error');
+  }
+}
+
+let saveStatTimer=null;
+function setSaveStatus(st){
+  const el=$('savestat');if(!el)return;
+  clearTimeout(saveStatTimer);
+  el.className='savestat '+st;
+  el.textContent=st==='saving'?'Gemmer…':st==='saved'?'Gemt ✓':st==='error'?'Fejl — prøv igen':'';
+  if(st==='saved')saveStatTimer=setTimeout(()=>{el.textContent='';el.className='savestat';},2000);
+}
+
+const OCOL=['#8A1C24','#2F6F8F','#C2891A','#4F7A4A','#7A5A8F','#B5623A','#3E6C6C','#8F5B5B'];
+const areaColor=id=>{const i=db.areas.findIndex(a=>a.id===id);return OCOL[(i<0?0:i)%OCOL.length];};
+const firstArea=()=>db.areas[0]&&db.areas[0].id;
+const area=id=>db.areas.find(a=>a.id===id)||{id,name:'Uden procesområde'};
+const mainById=id=>db.mains.find(m=>m.id===id)||{id,title:'Uden hovedproces',area:firstArea()};
+const areaOfSub=s=>mainById(s.main).area;
+const subsOfMain=mid=>db.subs.filter(s=>s.main===mid);
+const mainsOfArea=oid=>db.mains.filter(m=>m.area===oid);
+const initials=s=>{const x=(s||'').replace(/[._\-\/]/g,' ').trim().split(/\s+/);return((x[0]||'?')[0]+(x[1]?x[1][0]:(x[0]||'?')[1]||'')).toUpperCase();};
+function esc(s){return(s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+/* sikker inde i onclick="…'VÆRDI'…" */
+function jsq(s){return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+const roleIds=(s,k)=>(s.roles&&s.roles[k])||[];
+const involved=s=>[...new Set(UNIT_KEYS.flatMap(k=>roleIds(s,k)))];
+const unitRoles=(s,uid)=>UNIT_KEYS.filter(k=>roleIds(s,k).includes(uid));
+const refName=(k,id)=>anyName(id)||String(id||'');
+const owners=s=>[...new Set(OWNER_KEYS.flatMap(k=>roleIds(s,k)))];
+const ltName=s=>s.lederteam?(regName('leaderteams',s.lederteam)||'Ukendt lederteam'):'';
+const afName=s=>s.arbfael?(regName('workgroups',s.arbfael)||'Ukendt arbejdsfællesskab'):'';
+const kapName=s=>s.kap?(regName('kapabiliteter',s.kap)||'Ukendt kapabilitet'):'';
+const delkapName=s=>s.delkap?(regName('delkapabiliteter',s.delkap)||'Ukendt delkapabilitet'):'';
+const delkapOf=kapId=>db.delkapabiliteter.filter(d=>!kapId||d.parent===kapId);
+const arbfaelOf=ltId=>db.workgroups.filter(w=>!ltId||w.parent===ltId);
+/* liste til en reference-dropdown: underregistre begrænses til den valgte overordnede */
+const fieldList=(reg,s)=>reg==='delkapabiliteter'?delkapOf(s.kap).sort(byName):reg==='workgroups'?arbfaelOf(s.lederteam):regList(reg);
+/* underfelt → [overordnet felt, overordnet register]: når kap/lederteam skiftes, nulstilles et underfelt, der ikke hører til */
+const CHILD_OF={kap:['delkap','delkapabiliteter'],lederteam:['arbfael','workgroups']};
+const PARENT_FIELD={delkap:'kap',arbfael:'lederteam'};
+function syncChild(s,field,val){const c=CHILD_OF[field];if(!c)return;const x=db[c[1]].find(y=>y.id===s[c[0]]);if(x&&x.parent&&x.parent!==val)s[c[0]]='';}
+
+function normalizeDb(){
+  ['areas','mains','subs',...REG_KEYS,'log'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+  db.subs.forEach(s=>{
+    if(!s.roles||typeof s.roles!=='object')s.roles={};
+    ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});
+    ['kap','delkap','lederteam','arbfael'].forEach(f=>{if(typeof s[f]!=='string')s[f]='';});
+  });
+  migrateRefs();
+  [...db.delkapabiliteter,...db.workgroups].forEach(x=>{if(typeof x.parent!=='string')x.parent='';});
+  /* arbejdsfællesskaber uden lederteam arver det, når alle deres delprocesser peger på samme lederteam */
+  db.workgroups.forEach(w=>{
+    if(w.parent)return;
+    const lts=new Set(db.subs.filter(s=>s.arbfael===w.id&&s.lederteam).map(s=>s.lederteam));
+    if(lts.size===1)w.parent=lts.values().next().value;
+  });
+}
+/* Ældre data flyttes over i de nuværende registre: én enhedsliste → tre, ejere delt i procesejer/driftsejer, tekstreferencer → id'er */
+function migrateRefs(){
+  const legacyUnits=Array.isArray(db.units)?db.units:null;
+  const legacyOwners=Array.isArray(db.owners)?db.owners:null;
+  const legacyText=db.subs.some(s=>Object.entries(REF_FIELDS).some(([reg,f])=>s[f]&&!db[reg].some(x=>x.id===s[f])));
+  if(!legacyUnits&&!legacyOwners&&!legacyText)return;
+  if(legacyUnits){
+    const TMAP={'UDDADM':'unitsUdd','Andre ADM':'unitsAdm','Fagmiljø':'unitsFak'};
+    legacyUnits.forEach(u=>{
+      if(UNIT_REGS.some(r=>db[r].some(x=>x.id===u.id)))return;
+      const usedIn=k=>db.subs.some(s=>roleIds(s,k).includes(u.id));
+      const reg=usedIn('RU')?'unitsUdd':usedIn('RA')?'unitsAdm':usedIn('RF')?'unitsFak':(TMAP[u.type]||'unitsAdm');
+      db[reg].push({id:u.id,name:u.name});
+    });
+    delete db.units;
+  }
+  const oldName=id=>{const o=(legacyOwners||[]).find(x=>x.id===id);return o?o.name:'';};
+  db.subs.forEach(s=>{
+    ROLE_DEFS.forEach(d=>{
+      const multi=d.regs.length>1,reg=multi?'unitsAdm':d.regs[0];
+      s.roles[d.k]=(s.roles[d.k]||[]).map(id=>{
+        if(d.regs.some(r=>db[r].some(x=>x.id===id)))return id;
+        const x=ensureReg(reg,(multi?'':oldName(id))||rawAnyName(id)||id);return x?x.id:null;
+      }).filter(Boolean);
+    });
+    [['lederteam','leaderteams'],['kap','kapabiliteter']].forEach(([f,reg])=>{
+      const v=s[f];if(!v||db[reg].some(x=>x.id===v))return;
+      const x=ensureReg(reg,v);s[f]=x?x.id:'';
+    });
+    [['arbfael','workgroups','lederteam'],['delkap','delkapabiliteter','kap']].forEach(([f,reg,pf])=>{
+      if(s[f]&&!db[reg].some(x=>x.id===s[f])){const x=ensureReg(reg,s[f],s[pf]);s[f]=x?x.id:'';}
+    });
+  });
+  delete db.owners;
+}
+
+/* ---------- filtre ---------- */
+let filters={q:'',area:[],lt:[],pe:[],unit:[]};
+const anyFilter=()=>!!(filters.q||filters.area.length||filters.lt.length||filters.pe.length||filters.unit.length);
+function matchSub(s){
+  if(filters.area.length&&!filters.area.includes(areaOfSub(s)))return false;
+  if(filters.lt.length&&!filters.lt.includes(s.lederteam||''))return false;
+  if(filters.pe.length){const ids=roleIds(s,'PE');
+    if(!(ids.some(id=>filters.pe.includes(id))||(!ids.length&&filters.pe.includes(''))))return false;}
+  if(filters.unit.length&&!involved(s).some(id=>filters.unit.includes(id)))return false;
+  if(filters.q){
+    const q=filters.q.toLowerCase();
+    const hay=[s.title,s.status||'',s.note||'',kapName(s),delkapName(s),ltName(s),afName(s),mainById(s.main).title,area(areaOfSub(s)).name,
+      ...owners(s).flatMap(id=>[anyName(id),rawAnyName(id)]),...involved(s).map(anyName)].join(' ').toLowerCase();
+    if(!hay.includes(q))return false;
+  }
+  return true;
+}
+const filteredSubs=()=>db.subs.filter(matchSub);
+
+/* UI-tilstand: hvilke grene er foldet ud */
+const ui={openAreas:new Set(),openMains:new Set(),openKeys:new Set(),openFilter:null};
+const toggleSet=(set,k)=>{set.has(k)?set.delete(k):set.add(k);render();};
+const toggleKey=k=>toggleSet(ui.openKeys,k);
+const toggleArea=id=>toggleSet(ui.openAreas,id);
+const toggleMain=id=>toggleSet(ui.openMains,id);
+
+/* fælles HTML-stumper */
+const chev=n=>`<svg class="chev" width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>`;
+const ARROW_R='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
+const IC_DOWN='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
+const arrow=(n,w,up)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}"><path d="${up?'M18 15l-6-6-6 6':'M6 9l6 6 6-6'}"/></svg>`;
+const emptyState=(b,t)=>`<div class="empty-state"><b>${b}</b>${t}</div>`;
+const EMPTY_APP=emptyState('Appen er tom','Hent proceslandskabet ind via <em>Data → Importér fra Excel</em> for at komme i gang.');
+const appEmpty=()=>!db.subs.length&&!db.mains.length&&!allUnitList().length;
+const colHead=t=>`<div class="colhead"><div></div><div>${t}</div><div class="c-lt">Lederteam</div><div>Procesejer (A)</div><div class="c-de">Driftsejer (A)</div><div></div></div>`;
+const viewHead=(h2,sub)=>`<div class="viewhead"><h2>${h2}</h2><span class="vh-sub">${sub}</span></div>`;
+const plural=(n,one,many)=>n+' '+(n===1?one:many);
+const mainsCount=subs=>new Set(subs.map(s=>s.main)).size;
+const opt=(v,t,cur)=>`<option value="${v}"${v===cur?' selected':''}>${esc(t)}</option>`;
+/* en gren (procesområde / lederteam / enhed) med fold-ud-hoved */
+const branch=(open,onclick,color,title,meta,inner,attr='')=>`<section class="areagroup ${open?'':'collapsed'}"${attr}>
+  <div class="ahead" onclick="${onclick}"><span class="swatch" style="background:${color}"></span>
+    <div><div class="atitle">${esc(title)}</div><div class="ameta">${meta}</div></div>${chev(18)}</div>
+  <div class="awrap">${inner}</div></section>`;
+/* et hovedproces-kort med rækker */
+const mainCard=(open,onclick,title,meta,head,rows,attr='',cls='')=>`<div class="maincard ${open?'open':''}${cls}"${attr}>
+  <div class="mhead" onclick="${onclick}">${chev(16)}<div class="mtitlewrap"><div class="mtitle">${esc(title)}</div><div class="mmeta">${meta}</div></div></div>
+  <div class="mwrap">${head}${rows}</div></div>`;
+/* én delproces-række; mv = indholdet af pile-kolonnen, uid = enhed (viser RACI-tags), showMain = hovedproces under titlen */
+function subRow(s,uid,showMain,mv){
+  const peN=roleIds(s,'PE').map(anyName).filter(Boolean);
+  return `<div class="oprow" onclick="openDrawer('${s.id}')"><div class="movecol">${mv||''}</div>
+    <div class="opname">${uid?raciTags(s,uid):''}${esc(s.title)}${showMain?`<small>${esc(mainById(s.main).title)}</small>`:''}</div>
+    ${cellNames(ltName(s)?[ltName(s)]:[],'c-lt')}${cellNames(peN,'')}${cellIcons(roleIds(s,'DE'),'c-de')}${ARROW_R}</div>`;
+}
+
+/* ============================================================
+   VISNING 1 — LANDSKAB (procesområde → hovedproces → delproces)
+   ============================================================ */
+function renderLandskab(){
+  const subs=filteredSubs();
+  const subIds=new Set(subs.map(s=>s.id));
+  const mainsShown=db.mains.filter(m=>subsOfMain(m.id).some(s=>subIds.has(s.id)));
+  const areasShown=db.areas.filter(a=>mainsShown.some(m=>m.area===a.id));
+  let h=viewHead('Procesområder',`${plural(areasShown.length,'procesområde','procesområder')} · ${mainsShown.length} hovedprocesser · ${subs.length} delprocesser`);
+  if(appEmpty())return h+EMPTY_APP;
+  if(!subs.length)return h+emptyState('Ingen delprocesser matcher filtrene','Justér søgning eller filtre — eller opret en ny delproces.');
+  areasShown.forEach(a=>{
+    const mns=mainsShown.filter(m=>m.area===a.id);
+    const aSubs=mns.flatMap(m=>subsOfMain(m.id).filter(s=>subIds.has(s.id)));
+    const aUnits=new Set(aSubs.flatMap(involved)).size;
+    const inner=mns.map(m=>{
+      const ms=subsOfMain(m.id).filter(s=>subIds.has(s.id)),allSibs=subsOfMain(m.id);
+      const rows=ms.map(s=>{
+        const pos=allSibs.indexOf(s);
+        const mv=canEdit()?`<button ${pos===0?'disabled':''} title="Flyt op" onclick="event.stopPropagation();moveSub('${s.id}',-1)">${arrow(13,2.5,1)}</button>
+          <button ${pos===allSibs.length-1?'disabled':''} title="Flyt ned" onclick="event.stopPropagation();moveSub('${s.id}',1)">${arrow(13,2.5,0)}</button>`:'';
+        return subRow(s,null,false,mv);
+      }).join('')+(canEdit()?`<button class="addsub" onclick="newSub('${m.id}')">+ Tilføj delproces</button>`:'');
+      return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,plural(ms.length,'delproces','delprocesser'),colHead('Delproces'),rows,` data-main="${m.id}"`);
+    }).join('');
+    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aUnits?' · '+aUnits+' enheder':''}`,inner,` data-area="${a.id}"`);
+  });
+  return h;
+}
+function avatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`;show.forEach(id=>s+=`<span class="avatar" title="${esc(anyName(id))}">${initials(anyName(id))}</span>`);if(ids.length>4)s+=`<span class="avatar more">+${ids.length-4}</span>`;return s+`</div>`;}
+/* Når der filtreres, foldes de træffende grene automatisk ud */
+function expandMatches(){
+  if(!anyFilter()){ui.openAreas=new Set();ui.openMains=new Set();return;}
+  const subs=filteredSubs();
+  ui.openMains=new Set(subs.map(s=>s.main));
+  ui.openAreas=new Set(subs.map(areaOfSub));
+}
+
+/* ============================================================
+   VISNING 2 — MATRIX (lederteam → arbejdsfællesskab → hovedproces → delproces)
+   ============================================================ */
+function groupRefs(subs,field,reg,fallback){
+  const ids=[...new Set(subs.map(s=>s[field]||''))];
+  return ids.map(id=>({id,label:id?(regName(reg,id)||fallback):fallback}))
+    .sort((a,b)=>!a.id?1:!b.id?-1:(regIndex(reg,a.id)-regIndex(reg,b.id)||a.label.localeCompare(b.label,'da')));
+}
+/* celle med initial-ikoner — fulde navne ved mouse-over */
+function cellIcons(ids,cls){
+  const t=(ids||[]).map(anyName).filter(Boolean).join(', ');
+  return `<div class="cellicons ${cls}" title="${esc(t)}">${ids&&ids.length?avatarStack(ids):'<span class="cellnames empty">—</span>'}</div>`;
+}
+function cellNames(list,cls){
+  const t=(list||[]).join(', ');
+  return `<div class="cellnames ${cls}${t?'':' empty'}" title="${esc(t)}">${t?esc(t):'—'}</div>`;
+}
+/* delprocesser direkte i en gren — hovedprocessen står under titlen */
+function flatBlock(subs){
+  const ord=[...subs].sort((a,b)=>{
+    const ia=db.mains.findIndex(m=>m.id===a.main),ib=db.mains.findIndex(m=>m.id===b.main);
+    return (ia<0?9e9:ia)-(ib<0?9e9:ib)||db.subs.indexOf(a)-db.subs.indexOf(b);});
+  return `<div class="maincard open flatcard"><div class="mwrap">${colHead('Delproces / hovedproces')}${ord.map(s=>subRow(s,null,true)).join('')}</div></div>`;
+}
+/* hovedprocesser med deres delprocesser inde i en gren */
+function mainsBlock(subs,keyBase,uid,force){
+  const ids=[...new Set(subs.map(s=>s.main))];
+  const ordered=[...db.mains.filter(m=>ids.includes(m.id)),...ids.filter(id=>!db.mains.some(m=>m.id===id)).map(mainById)];
+  return ordered.map(m=>{
+    const ms=subs.filter(s=>s.main===m.id),key=keyBase+'>'+m.id;
+    return mainCard(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,m.title,`${esc(area(m.area).name)} · ${plural(ms.length,'delproces','delprocesser')}`,colHead('Delproces'),ms.map(s=>subRow(s,uid)).join(''));
+  }).join('');
+}
+function renderMatrix(){
+  const subs=filteredSubs();
+  if(appEmpty())return EMPTY_APP;
+  if(!subs.length)return emptyState('Ingen delprocesser matcher filtrene','Justér søgning eller filtre.');
+  const force=anyFilter();
+  const lts=groupRefs(subs,'lederteam','leaderteams','Uden lederteam');
+  const ltN=lts.filter(g=>g.id).length;
+  let h=viewHead('Lederteam og arbejdsfællesskab',`${plural(ltN,'lederteam','lederteams')} · ${mainsCount(subs)} hovedprocesser · ${subs.length} delprocesser`);
+  lts.forEach((g,i)=>{
+    const ltSubs=subs.filter(s=>(s.lederteam||'')===g.id);
+    const afs=groupRefs(ltSubs,'arbfael','workgroups','Uden arbejdsfællesskab');
+    const afN=afs.filter(x=>x.id).length;
+    const key='lt>'+(g.id||'_none');
+    const inner=afs.map(af=>{
+      const afSubs=ltSubs.filter(s=>(s.arbfael||'')===af.id);
+      const akey=key+'>'+(af.id||'_none');
+      return `<div class="subgroup ${force||ui.openKeys.has(akey)?'open':''}">
+        <div class="shead" onclick="toggleKey('${jsq(akey)}')">${chev(15)}<div><div class="stitle">${esc(af.label)}</div><div class="smeta">${mainsCount(afSubs)} hovedprocesser · ${afSubs.length} delprocesser</div></div></div>
+        <div class="swrap">${flatBlock(afSubs)}</div></div>`;
+    }).join('');
+    h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,OCOL[i%OCOL.length],g.label,`${plural(afN,'arbejdsfællesskab','arbejdsfællesskaber')} · ${mainsCount(ltSubs)} hovedprocesser · ${ltSubs.length} delprocesser`,inner);
+  });
+  return h;
+}
+
+/* ============================================================
+   VISNING 3 — ENHED (enhed → hovedproces → delproces)
+   ============================================================ */
+function renderEnhed(){
+  const subs=filteredSubs();
+  if(appEmpty())return EMPTY_APP;
+  const uids=[...new Set(subs.flatMap(involved))];
+  if(!uids.length)return emptyState('Ingen enheder er tilknyttet','Åbn en delproces, tryk <em>Rediger</em>, og sæt enheder på rollerne — så vises hver enheds processer her.');
+  const force=anyFilter();
+  uids.sort((a,b)=>{
+    const ra=regOf(a),rb=regOf(b);
+    const ta=UNIT_REGS.indexOf(ra),tb=UNIT_REGS.indexOf(rb);
+    if(ta!==tb)return (ta<0?99:ta)-(tb<0?99:tb);
+    return (ra?regIndex(ra,a):9e8)-(rb?regIndex(rb,b):9e8)||anyName(a).localeCompare(anyName(b),'da');
+  });
+  let h=viewHead('Enheder',`${plural(uids.length,'enhed','enheder')} · ${mainsCount(subs)} hovedprocesser · ${subs.length} delprocesser`);
+  uids.forEach(uid=>{
+    const mine=subs.filter(s=>involved(s).includes(uid)),key='en>'+uid;
+    const nPlans=regOf(uid)==='unitsUdd'?planCountFor(uid):0;
+    const openBtn=regOf(uid)==='unitsUdd'?`<div class="unitopen"><button class="btn" onclick="event.stopPropagation();openEnhed('${jsq(uid)}')">Åbn enhedens opgaveoverblik${nPlans?` · ${plural(nPlans,'plan','planer')}`:''} →</button></div>`:'';
+    h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,openBtn+mainsBlock(mine,key,uid,force));
+  });
+  return h;
+}
+function raciTags(s,uid){
+  const seen=[];
+  return unitRoles(s,uid).map(k=>{const d=roleDef(k);if(seen.includes(d.r+d.label))return'';seen.push(d.r+d.label);return `<span class="racitag raci-${d.r}" title="${esc(d.label)}">${d.r}</span>`;}).join('');
+}
+
+/* ============================================================
+   DRAWER — delproces (visning + redigering)
+   ============================================================ */
+let drawerId=null,editBuf=null;
+const NOT_SET='<span class="v empty">Ikke udfyldt</span>';
+const vOr=t=>t?esc(t):NOT_SET;
+function openDrawer(id){drawerId=id;editBuf=null;renderDrawerView();openScrim();}
+function setScrim(on){$('drawer').classList.toggle('open',on);$('drawer').setAttribute('aria-hidden',on?'false':'true');$('scrim').classList.toggle('open',on);}
+function openScrim(){setScrim(true);}
+function closeDrawer(){setScrim(false);drawerId=null;editBuf=null;uDrawerSub=null;uEditBuf=null;}
+
+function renderDrawerView(){
+  const s=db.subs.find(x=>x.id===drawerId);if(!s)return closeDrawer();
+  const m=mainById(s.main),oid=m.area;
+  const racLine=k=>{const d=roleDef(k),ids=roleIds(s,k),hint=roleHint(d);
+    return `<div class="raci-line"><div class="rl-key"><span class="racitag raci-${d.r}">${d.r}</span><span><b>${esc(d.label)}</b>${hint?`<span style="color:var(--faint)">${esc(hint)}</span>`:''}</span></div>
+      <div class="rl-people">${ids.length?ids.map(id=>{const link=d.k==='RU'&&regOf(id)==='unitsUdd';
+        return `<span class="pill${link?' unitlink':''}"${link?` role="button" tabindex="0" title="Åbn enhedens opgaveoverblik" onclick="openEnhed('${jsq(id)}')"`:''}><span class="avatar" style="width:18px;height:18px;font-size:9px">${initials(refName(k,id))}</span>${esc(refName(k,id))}${link?' →':''}</span>`;}).join(''):'<span class="rl-none">Ikke udfyldt</span>'}</div></div>`;};
+  const field=(k,v,attr='')=>`<div><div class="k">${k}</div><div class="v"${attr}>${v}</div></div>`;
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="closeDrawer()" aria-label="Luk">×</button>
+      <h2>${esc(s.title)}</h2>
+      ${canEdit()?`<div class="dr-actions">
+        <button class="btn primary" onclick="startEdit()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Rediger</button>
+        <button class="btn danger" onclick="deleteSub()">Slet</button>
+      </div>`:''}
+    </div>
+    <div class="dr-body">
+      <div class="field row2">${field('Kapabilitet',vOr(kapName(s)))}${field('Delkapabilitet',vOr(delkapName(s)))}</div>
+      <div class="field row2">${field('Procesområde',esc(area(oid).name),` style="color:${areaColor(oid)}"`)}${field('Hovedproces',esc(m.title))}</div>
+      <div class="field row2">${field('Lederteam',vOr(ltName(s)))}${field('Arbejdsfællesskab',vOr(afName(s)))}</div>
+      <div class="field"><div class="k">Ansvar og involvering (RACI)</div><div class="raci-grid">${ROLE_KEYS.map(racLine).join('')}</div></div>
+      ${(s.status||s.note)?`<div class="field"><div class="k">Ændring ift. tidligere proceslandskab</div><div class="v">${s.status?statusTag(s.status)+' ':''}${s.note?esc(s.note):''}</div></div>`:''}
+    </div>`;
+}
+function startEdit(){if(!canEdit())return showLogin();editBuf=clone(db.subs.find(x=>x.id===drawerId));normalizeSub(editBuf);renderDrawerEdit();}
+function normalizeSub(s){if(!s.roles)s.roles={};ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});}
+function newSub(mid){if(!canEdit())return showLogin();
+  const id='d'+Date.now();
+  editBuf={id,main:mid||(db.mains[0]&&db.mains[0].id)||'',title:'',kap:'',delkap:'',lederteam:'',arbfael:'',roles:{},status:'',note:''};
+  normalizeSub(editBuf);drawerId=id;renderDrawerEdit();openScrim();
+}
+function renderDrawerEdit(){
+  const s=editBuf,isNew=!db.subs.some(x=>x.id===s.id),aid=editAreaId();
+  const lab=(t,inner)=>`<div><label>${t}</label>${inner}</div>`;
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="cancelEdit()" aria-label="Luk">×</button>
+      <div class="crumb" style="color:var(--wine)">${isNew?'Ny delproces':'Redigerer delproces'}</div>
+      <h2 contenteditable style="outline:none;min-height:1.2em" oninput="editBuf.title=this.textContent">${esc(s.title)}</h2>
+      <div class="dr-actions">
+        <button class="btn primary" onclick="saveSub()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Gem</button>
+        <button class="btn" onclick="cancelEdit()">Annullér</button>
+        ${isNew?'':'<button class="btn danger" onclick="deleteSub()">Slet</button>'}
+      </div>
+    </div>
+    <div class="dr-body frm">
+      <div class="two">${lab('Kapabilitet',regSelect('kapabiliteter','kap',s.kap))}${lab('Delkapabilitet',childSelect('delkapabiliteter','delkap',s))}</div>
+      <div class="two">${lab('Procesområde',`<select onchange="setEditArea(this.value)">${db.areas.map(a=>opt(a.id,a.name,aid)).join('')}</select>`)}${lab('Hovedproces','<div id="main-select"></div>')}</div>
+      <div class="two">${lab('Lederteam',regSelect('leaderteams','lederteam',s.lederteam))}${lab('Arbejdsfællesskab',childSelect('workgroups','arbfael',s))}</div>
+      <label>Ansvar og involvering (RACI)</label><div id="roles-edit"></div>
+      <div class="two">${lab('Ændringsstatus',`<select onchange="editBuf.status=this.value"><option value="">Ikke angivet</option>${STATUS_VALUES.map(v=>opt(v,v,s.status||'')).join('')}</select>`)}</div>
+      <label>Ændringsbeskrivelse</label><textarea rows="4" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)" oninput="editBuf.note=this.value">${esc(s.note||'')}</textarea>
+    </div>`;
+  renderMainSelect();renderRolesEdit();
+}
+function editAreaId(){
+  if(editBuf._area&&db.areas.some(a=>a.id===editBuf._area))return editBuf._area;
+  const m=db.mains.find(x=>x.id===editBuf.main);
+  return m?m.area:(firstArea()||'');
+}
+function setEditArea(v){
+  editBuf._area=v;
+  const first=mainsOfArea(v)[0];
+  editBuf.main=first?first.id:'';
+  renderMainSelect();
+}
+function renderMainSelect(){
+  const list=mainsOfArea(editAreaId());
+  $('main-select').innerHTML=list.length
+    ? `<select onchange="editBuf.main=this.value">${list.map(m=>opt(m.id,m.title,editBuf.main)).join('')}</select>`
+    : `<select disabled><option>Ingen hovedprocesser her endnu</option></select>`;
+}
+const refSelect=(reg,field,cur,list,newLabel)=>`<select onchange="setRegField('${reg}','${field}',this.value)"><option value="">Ikke valgt</option>${list.map(x=>opt(x.id,x.name,cur)).join('')}<option value="__new">${newLabel}</option></select>`;
+const regSelect=(reg,field,cur)=>refSelect(reg,field,cur,regList(reg),`+ Opret nyt ${esc(REGS[reg].one)}…`);
+/* underregister: begrænses til den valgte overordnede */
+function childSelect(reg,field,s){
+  const pf=PARENT_FIELD[field];
+  if(!s[pf])return `<select disabled><option>Vælg ${reg==='workgroups'?'et lederteam':'en kapabilitet'} først</option></select>`;
+  return refSelect(reg,field,s[field],fieldList(reg,s),reg==='workgroups'?'+ Opret nyt arbejdsfællesskab…':'+ Opret ny delkapabilitet…');
+}
+/* "+ Opret ny…" i en dropdown: spørg om navn (funktion for ejere), opret i registret og log det. Returnerer null ved fortryd. */
+function promptNewRef(reg,parentId){
+  const nm=prompt(OWNER_REGS.includes(reg)
+    ?'Funktion for ny '+REGS[reg].one+' (skriv IKKE navne — de indlæses fra navnearket):'
+    :'Navn på nyt '+REGS[reg].one+':');
+  if(!nm||!nm.trim())return null;
+  const x=ensureReg(reg,nm.trim(),REGS[reg].parent?parentId||'':undefined);
+  logChange('Oprettede '+REGS[reg].one+' '+qt(x.name));saveDb();
+  return x;
+}
+/* "+ Opret ny" valgt i en rolle-dropdown: registret står efter kolon, ellers rollens standardregister */
+const newRoleRef=(d,val)=>promptNewRef(String(val).split(':')[1]||d.newReg||d.regs[0]);
+/* valgmuligheder til en rolle-dropdown: registrenes værdier (minus allerede valgte) + "opret ny" */
+function roleOptions(d,ids){
+  const opts=d.regs.map(r=>{
+    const list=(db[r]||[]).filter(x=>!ids.includes(x.id)).map(x=>({id:x.id,name:regName(r,x.id)}));
+    if(!list.length)return '';
+    const inner=list.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    return d.regs.length>1?`<optgroup label="${esc(REGS[r].label)}">${inner}</optgroup>`:inner;
+  }).join('');
+  return opts+(d.regs.length>1?d.regs:[d.regs[0]]).map(r=>`<option value="__new:${r}">+ Opret ny i ${esc(REGS[r].label)}…</option>`).join('');
+}
+function setRegField(reg,field,val){
+  if(val==='__new'){
+    const x=promptNewRef(reg,PARENT_FIELD[field]?editBuf[PARENT_FIELD[field]]:'');
+    if(!x){renderDrawerEdit();return;}
+    val=x.id;
+  }
+  editBuf[field]=val;
+  syncChild(editBuf,field,val);
+  renderDrawerEdit();
+}
+function renderRolesEdit(){
+  $('roles-edit').innerHTML=ROLE_KEYS.map(k=>{
+    const d=roleDef(k),ids=editBuf.roles[k],hint=roleHint(d);
+    const chips=ids.map(id=>`<span class="pchip">${esc(refName(k,id))}<button onclick="roleRemove('${k}','${id}')" title="Fjern">×</button></span>`).join('');
+    return `<div class="picker"><div class="lbl"><span class="racitag raci-${d.r}">${d.r}</span>${esc(d.label)}${hint?` <span style="font-weight:400;color:var(--faint)">· ${esc(hint)}</span>`:''}</div>
+      <div class="chips">${chips}</div>
+      <select onchange="roleAdd('${k}',this.value);this.value=''"><option value="">+ Tilføj…</option>${roleOptions(d,ids)}</select></div>`;
+  }).join('');
+}
+function roleAdd(k,val){
+  if(!val)return;
+  if(String(val).startsWith('__new')){
+    const x=newRoleRef(roleDef(k),val);
+    if(!x){renderRolesEdit();return;}
+    val=x.id;
+  }
+  if(!editBuf.roles[k].includes(val))editBuf.roles[k].push(val);
+  renderRolesEdit();
+}
+function roleRemove(k,id){editBuf.roles[k]=editBuf.roles[k].filter(x=>x!==id);renderRolesEdit();}
+function saveSub(){
+  if(!editBuf.title.trim()){alert('Giv delprocessen et navn.');return;}
+  if(!editBuf.main){alert('Vælg en hovedproces. Procesområdet har ingen hovedprocesser endnu — opret en under Struktur & organisation.');return;}
+  const prev=db.subs.find(x=>x.id===editBuf.id);
+  if(prev&&prev.title!==editBuf.title.trim()&&planIndex[editBuf.id]&&planIndex[editBuf.id].size){
+    if(!confirm(planIndex[editBuf.id].size+' enhed(er) har planlægningsdata på delprocessen. Omdøb alligevel? (Enhedernes planer følger med delprocessen.)'))return;
+  }
+  delete editBuf._area;
+  editBuf.note=String(editBuf.note||'').trim();if(!STATUS_VALUES.includes(editBuf.status))editBuf.status='';
+  const idx=db.subs.findIndex(x=>x.id===editBuf.id);
+  if(idx>=0){
+    const ch=subDiff(db.subs[idx],editBuf);
+    if(ch.length)logChange('Redigerede delprocessen '+qt(editBuf.title)+': '+ch.join(', '));
+    db.subs[idx]=clone(editBuf);
+  }else{db.subs.push(clone(editBuf));logChange('Oprettede delprocessen '+qt(editBuf.title)+' under '+qt(mainById(editBuf.main).title));}
+  ui.openMains.add(editBuf.main);drawerId=editBuf.id;editBuf=null;saveDb();render();renderDrawerView();
+}
+/* kort beskrivelse af hvad der er ændret på en delproces */
+function subDiff(a,b){
+  const ch=[];
+  if(a.title!==b.title)ch.push('titel '+qt(a.title)+' → '+qt(b.title));
+  if(a.main!==b.main)ch.push('hovedproces → '+qt(mainById(b.main).title));
+  if((a.status||'')!==(b.status||''))ch.push('ændringsstatus → '+(b.status?qt(b.status):'(tom)'));
+  if((a.note||'')!==(b.note||''))ch.push('ændringsbeskrivelse '+(b.note?'opdateret':'slettet'));
+  [['kap','kapabiliteter'],['delkap','delkapabiliteter'],['lederteam','leaderteams'],['arbfael','workgroups']].forEach(([f,reg])=>{if((a[f]||'')!==(b[f]||''))ch.push(REGS[reg].one+' → '+(b[f]?qt(rawRegName(reg,b[f])):'(tom)'));});
+  ROLE_DEFS.forEach(d=>{
+    const x=roleIds(a,d.k),y=roleIds(b,d.k);
+    const add=y.filter(id=>!x.includes(id)).map(rawAnyName),rem=x.filter(id=>!y.includes(id)).map(rawAnyName);
+    if(!add.length&&!rem.length)return;
+    const lbl=d.label+(roleHint(d)?' ('+roleHint(d)+')':'');
+    ch.push(lbl+(add.length?' +'+add.join(', '):'')+(rem.length?' −'+rem.join(', '):''));
+  });
+  return ch;
+}
+function cancelEdit(){if(db.subs.some(x=>x.id===drawerId)){editBuf=null;renderDrawerView();}else closeDrawer();}
+function deleteSub(){
+  if(!canEdit())return showLogin();
+  const s=db.subs.find(x=>x.id===drawerId);if(!s)return;
+  const units=planUnits(s.id);
+  const warn=units.length?`\n\nBEMÆRK: ${units.length} enhed(er) har planlægningsdata på delprocessen (${units.map(anyName).join(', ')}). Enhedernes planer for delprocessen slettes også.`:'';
+  if(!confirm(`Slet delprocessen "${s.title}"?`+warn))return;
+  logChange('Slettede delprocessen '+qt(s.title)+(units.length?' (inkl. '+units.length+' enhedsplaner)':''));
+  db.subs=db.subs.filter(x=>x.id!==drawerId);
+  if(units.length)purgeUnitPlans(s.id);
+  saveDb();closeDrawer();render();
+}
+/* byt x med naboen (dir ±1) blandt sibs inde i arr; false hvis ved kanten */
+function swapWithin(arr,x,sibs,dir){const si=sibs.indexOf(x),ti=si+dir;if(ti<0||ti>=sibs.length)return false;const gi=arr.indexOf(x),gj=arr.indexOf(sibs[ti]);arr[gi]=arr[gj];arr[gj]=x;return true;}
+function moveSub(id,dir){if(!canEdit())return showLogin();const s=db.subs.find(x=>x.id===id);if(!s)return;if(!swapWithin(db.subs,s,db.subs.filter(x=>x.main===s.main),dir))return;logChange('Flyttede delprocessen '+qt(s.title)+' '+dirWord(dir));saveDb();render();}
+
+/* ============================================================
+   VISNING 4 — LISTE (regnearks-agtig bruttoliste: alle delprocesser × alle felter, kun for indloggede)
+   Markeret celle; piltaster/Tab flytter, Enter/F2 (eller et tastetryk) åbner redigering, Esc fortryder.
+   Hver kolonne kan sorteres (klik på overskrift) og filtreres (felt under overskriften). Ændringer logges og gemmes straks.
+   ============================================================ */
+const STATUS_VALUES=['Ny','Ændret','Uændret'];
+const statusTag=v=>v?`<span class="stag s-${v==='Ny'?'ny':v==='Ændret'?'aendret':'uaendret'}">${esc(v)}</span>`:'';
+const LIST_COLS=[
+  {k:'title',label:'Delproces',type:'text',w:'w-title ltitle'},
+  {k:'area',label:'Procesområde',type:'area',w:'w-std'},
+  {k:'main',label:'Hovedproces',type:'main',w:'w-std'},
+  {k:'kap',label:'Kapabilitet',type:'reg',reg:'kapabiliteter',w:'w-std'},
+  {k:'delkap',label:'Delkapabilitet',type:'reg',reg:'delkapabiliteter',parentField:'kap',parentHint:'Vælg kapabilitet først',w:'w-std'},
+  {k:'lederteam',label:'Lederteam',type:'reg',reg:'leaderteams',w:'w-std'},
+  {k:'arbfael',label:'Arbejdsfællesskab',type:'reg',reg:'workgroups',parentField:'lederteam',parentHint:'Vælg lederteam først',w:'w-std'},
+  ...ROLE_DEFS.map(d=>({k:d.k,label:d.col,type:'role',def:d,w:'w-role'})),
+  {k:'status',label:'Ændringsstatus',type:'status',w:'w-status'},
+  {k:'note',label:'Ændringsbeskrivelse',type:'text',w:'w-note'}
+];
+/* UI-tilstand for listen (gemmes ikke, bortset fra skjulte kolonner og rækkefølge i localStorage — kun kolonnenøgler) */
+const listState={active:null,sort:null,filters:{},refocus:false,focusFilter:null,pre:false,moveAfter:null,hidden:new Set(),colMenu:false,order:[]};
+const LIST_COLS_KEY='ku-proceslandskab-liste-kolonner',LIST_ORDER_KEY='ku-proceslandskab-liste-raekkefoelge';
+{const v=lsGet(LIST_COLS_KEY);if(Array.isArray(v))v.forEach(k=>listState.hidden.add(k));}
+{const v=lsGet(LIST_ORDER_KEY);if(Array.isArray(v))listState.order=v.filter(k=>LIST_COLS.some(c=>c.k===k));}
+const listCol=k=>LIST_COLS.find(c=>c.k===k);
+const listSub=id=>db.subs.find(x=>x.id===id);
+/* kolonnernes rækkefølge (titel altid først); nye kolonner lægges bagest */
+const listOrderedCols=()=>{
+  const rest=LIST_COLS.filter(c=>c.k!=='title'&&!listState.order.includes(c.k)).map(c=>c.k);
+  return [listCol('title'),...[...listState.order.filter(k=>k!=='title'),...rest].map(listCol)];
+};
+const listVisibleCols=()=>listOrderedCols().filter(c=>c.k==='title'||!listState.hidden.has(c.k));
+const listRefresh=()=>{listState.refocus=true;render();};
+const listColsChanged=()=>{listState.colMenu=true;render();};
+const saveHidden=()=>lsSet(LIST_COLS_KEY,[...listState.hidden]);
+/* træk-og-slip: flyt kolonne k hen foran/efter kolonne target */
+function listDropCol(k,target,after){
+  if(!k||!target||k===target||k==='title'||target==='title')return;
+  const keys=listOrderedCols().filter(c=>c.k!=='title').map(c=>c.k).filter(x=>x!==k);
+  let j=keys.indexOf(target);if(j<0)return;if(after)j++;
+  keys.splice(j,0,k);listState.order=keys;lsSet(LIST_ORDER_KEY,keys);
+  listState.colMenu=true;listRefresh();
+}
+let lcolDrag=null;
+const dropAfter=e=>{const r=e.currentTarget.getBoundingClientRect();return e.clientY>r.top+r.height/2;};
+function lcolDragStart(e,k){lcolDrag=k;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',k);}catch(x){}e.currentTarget.classList.add('dragging');}
+function lcolDragOver(e){
+  if(!lcolDrag)return;e.preventDefault();e.dataTransfer.dropEffect='move';
+  const after=dropAfter(e);e.currentTarget.classList.toggle('drop-before',!after);e.currentTarget.classList.toggle('drop-after',after);
+}
+function lcolDragLeave(e){e.currentTarget.classList.remove('drop-before','drop-after');}
+function lcolDrop(e,target){e.preventDefault();const after=dropAfter(e);lcolDragLeave(e);const k=lcolDrag;lcolDrag=null;listDropCol(k,target,after);}
+function lcolDragEnd(){lcolDrag=null;document.querySelectorAll('#lcolmenu .lcolrow').forEach(r=>r.classList.remove('dragging','drop-before','drop-after'));}
+function listResetOrder(){listState.order=[];lsDel(LIST_ORDER_KEY);listColsChanged();}
+function listToggleCol(k,show){
+  if(k==='title')return;
+  if(show)listState.hidden.delete(k);else listState.hidden.add(k);
+  saveHidden();
+  if(listState.active&&listState.active.col===k&&!show)listState.active={id:listState.active.id,col:'title'};
+  listColsChanged();
+}
+function listShowAllCols(){listState.hidden.clear();lsDel(LIST_COLS_KEY);listColsChanged();}
+function listHideAllCols(){LIST_COLS.forEach(c=>{if(c.k!=='title')listState.hidden.add(c.k);});saveHidden();listColsChanged();}
+function listToggleColMenu(e){e.stopPropagation();listState.colMenu=!listState.colMenu;const m=$('lcolmenu');if(m)m.classList.toggle('open',listState.colMenu);}
+function listCloseColMenu(){if(!listState.colMenu)return;listState.colMenu=false;const m=$('lcolmenu');if(m)m.classList.remove('open');}
+/* cellens tekst — bruges til visning, filtrering og sortering */
+function listCellText(s,col){
+  switch(col.type){
+    case 'text':return s[col.k]||'';
+    case 'status':return s.status||'';
+    case 'area':{const a=db.areas.find(x=>x.id===areaOfSub(s));return a?a.name:'';}
+    case 'main':return mainById(s.main).title||'';
+    case 'reg':return regName(col.reg,s[col.k])||'';
+    case 'role':return roleIds(s,col.k).map(id=>refName(col.k,id)).join(', ');
+  }
+  return '';
+}
+const roleNames=(s,col)=>roleIds(s,col.k).map(id=>refName(col.k,id));
+/* matcher rækken et kolonnefilter? (præcis værdi — roller matcher, hvis én af rækkens roller er værdien) */
+function listMatch(s,col,v){
+  if(col.type==='role'){const names=roleNames(s,col);return v==='__empty'?!names.length:names.includes(v);}
+  const t=listCellText(s,col);return v==='__empty'?!t:t===v;
+}
+const LEMPTY='<span class="lempty">–</span>';
+/* cellens indhold i visningstilstand */
+function listCellInner(s,col){
+  if(col.type==='role'){const ids=roleIds(s,col.k);return ids.length?ids.map(id=>`<span class="lname">${esc(refName(col.k,id))}</span>`).join(''):LEMPTY;}
+  if(col.parentField&&!s[col.parentField])return `<span class="lhint">${esc(col.parentHint)}</span>`;
+  if(col.type==='status')return s.status?statusTag(s.status):LEMPTY;
+  const t=listCellText(s,col);
+  return t?esc(t):LEMPTY;
+}
+/* cellens indhold i redigeringstilstand */
+function listEditorHtml(s,col){
+  const k=`onkeydown="listEdKey(event,this)"`,b=`onblur="listEdBlur(this)"`;
+  const sel=(field,inner)=>`<select ${k} ${b} onchange="listSelChange(this,'${field}')">${inner}</select>`;
+  if(col.type==='text'){const v=s[col.k]||'';return `<input type="text" value="${esc(v)}" data-orig="${esc(v)}" ${k} ${b}>`;}
+  if(col.type==='status')return sel('status',opt('','Ikke angivet',s.status||'')+STATUS_VALUES.map(v=>opt(v,v,s.status||'')).join(''));
+  if(col.type==='area')return sel('area',db.areas.map(a=>opt(a.id,a.name,areaOfSub(s))).join(''));
+  if(col.type==='main')return sel('main',mainsOfArea(areaOfSub(s)).map(m=>opt(m.id,m.title,s.main)).join(''));
+  if(col.type==='reg')return sel(col.k,opt('','Ikke valgt',s[col.k]||'')+fieldList(col.reg,s).map(x=>opt(x.id,x.name,s[col.k])).join('')+'<option value="__new">+ Opret ny…</option>');
+  if(col.type==='role'){
+    const ids=roleIds(s,col.k);
+    return `<div class="lchips">${ids.map(uid=>`<span class="pchip">${esc(refName(col.k,uid))}<button onclick="listRoleRemove('${s.id}','${col.k}','${uid}')" title="Fjern">×</button></span>`).join('')}</div>
+      <select class="ladd" ${k} onchange="listRoleAdd('${s.id}','${col.k}',this.value);this.value=''"><option value="">+ Tilføj…</option>${roleOptions(col.def,ids)}</select>`;
+  }
+  return '';
+}
+const daCmp=(a,b)=>a.localeCompare(b,'da',{numeric:true,sensitivity:'base'});
+function renderListe(){
+  if(!canEdit())return emptyState('Listen kræver login','Log ind for at se og redigere bruttolisten over alle delprocesser.');
+  if(appEmpty())return EMPTY_APP;
+  const base=filteredSubs();
+  const active=Object.entries(listState.filters).filter(([,v])=>v);
+  let subs=base.filter(s=>active.every(([k,v])=>listMatch(s,listCol(k),v)));
+  /* dropdown-værdier pr. kolonne: de værdier, der faktisk findes, givet de ØVRIGE kolonnefiltre (som i Excel) */
+  const valuesFor=col=>{
+    const rows=base.filter(s=>active.every(([k,v])=>k===col.k||listMatch(s,listCol(k),v)));
+    const set=new Set();let empty=false;
+    rows.forEach(s=>{
+      if(col.type==='role'){const ids=roleIds(s,col.k);if(!ids.length)empty=true;ids.forEach(id=>set.add(refName(col.k,id)));}
+      else{const t=listCellText(s,col);if(t)set.add(t);else empty=true;}
+    });
+    return {vals:[...set].sort(daCmp),empty};
+  };
+  /* standardrækkefølge som i Emne: procesområde → hovedproces → delproces; ellers valgt kolonnesortering */
+  const ai=id=>{const i=db.areas.findIndex(a=>a.id===id);return i<0?9e9:i;};
+  const mi=id=>{const i=db.mains.findIndex(m=>m.id===id);return i<0?9e9:i;};
+  subs.sort((a,b)=>ai(areaOfSub(a))-ai(areaOfSub(b))||mi(a.main)-mi(b.main)||db.subs.indexOf(a)-db.subs.indexOf(b));
+  if(listState.sort){const c=listCol(listState.sort.k),dir=listState.sort.dir;
+    subs.sort((a,b)=>{const ta=listCellText(a,c),tb=listCellText(b,c);if(!ta&&tb)return 1;if(ta&&!tb)return -1;return dir*daCmp(ta,tb);});}
+  const colsActive=active.length||listState.sort;
+  const colRows=listOrderedCols().map(c=>c.k==='title'
+    ?`<div class="lcolrow"><label class="fixed"><input type="checkbox" checked disabled>${esc(c.label)}</label></div>`
+    :`<div class="lcolrow" draggable="true" ondragstart="lcolDragStart(event,'${c.k}')" ondragover="lcolDragOver(event)" ondragleave="lcolDragLeave(event)" ondrop="lcolDrop(event,'${c.k}')" ondragend="lcolDragEnd()"><span class="lgrip" aria-hidden="true">⋮⋮</span><label><input type="checkbox"${listState.hidden.has(c.k)?'':' checked'} onchange="listToggleCol('${c.k}',this.checked)">${esc(c.label)}</label></div>`).join('');
+  let h=`<div class="viewhead"><h2>Liste</h2><span class="vh-sub">${subs.length}${colsActive||subs.length!==base.length?' af '+base.length:''} ${base.length===1?'delproces':'delprocesser'} · redigér direkte i cellerne</span>
+    ${colsActive?`<button class="lreset" onclick="listResetCols()">Nulstil sortering og kolonnefiltre</button>`:''}
+    <span class="menu-wrap" onclick="event.stopPropagation()"><button class="btn lcolbtn" onclick="listToggleColMenu(event)">Kolonner${listState.hidden.size?` (${listState.hidden.size} skjult)`:''} ${IC_DOWN}</button>
+      <div class="menu lcolmenu${listState.colMenu?' open':''}" id="lcolmenu"><div class="lcolhead">Vis og sortér kolonner</div>${colRows}
+      <div class="lcolhint">Træk en kolonne op eller ned for at ændre rækkefølgen i tabellen.</div>
+      <div class="lcolall"><button onclick="listShowAllCols()">Vis alle</button><button onclick="listHideAllCols()">Skjul alle</button><button onclick="listResetOrder()">Nulstil rækkefølge</button></div></div></span>
+    <span class="lkeys"><kbd>↑↓←→</kbd> / <kbd>Tab</kbd> flyt · <kbd>Enter</kbd> redigér / gem · <kbd>Esc</kbd> fortryd</span></div>`;
+  h+=`<div class="listwrap" onkeydown="listKey(event)"><table class="list"><thead><tr><th class="lact lfirst"></th>`;
+  const VIS=listVisibleCols();
+  VIS.forEach(c=>{const on=listState.sort&&listState.sort.k===c.k,fv=listState.filters[c.k]||'',{vals,empty}=valuesFor(c);
+    h+=`<th class="${c.w}"><button class="lsort${on?' on':''}" onclick="listSort('${c.k}')" title="Sortér">${esc(c.label)}<span class="arr">${on?(listState.sort.dir>0?'▲':'▼'):'↕'}</span></button>
+      <select class="lfilt${fv?' on':''}" data-filt="${c.k}" onchange="listFilter('${c.k}',this.value)" title="Filtrér på kolonnens værdier"><option value="">Alle</option>${empty?`<option value="__empty"${fv==='__empty'?' selected':''}>(tom)</option>`:''}${vals.map(v=>`<option value="${esc(v)}"${v===fv?' selected':''}>${esc(v)}</option>`).join('')}</select></th>`;});
+  h+=`</tr></thead><tbody>`;
+  if(!subs.length)h+=`<tr><td colspan="${VIS.length+1}" style="padding:22px;color:var(--muted)">Ingen delprocesser matcher søgning, filtre eller kolonnefiltre.</td></tr>`;
+  subs.forEach(s=>{
+    h+=`<tr><td class="lact lfirst"><button class="iconbtn sm open" tabindex="-1" title="Åbn delprocessen" onclick="openDrawer('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button></td>`;
+    VIS.forEach(c=>{h+=`<td class="lc ${c.w}" tabindex="0" data-id="${s.id}" data-col="${c.k}" onfocus="listOnFocus(this)" onmousedown="listState.pre=this.classList.contains('active')" onclick="listCellClick(this)">${listCellInner(s,c)}</td>`;});
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div>`;
+}
+const PF={preventScroll:true};
+/* efter hver render: genopret markeret celle, fokus og scroll-position */
+function listAfterRender(sc){
+  const w=document.querySelector('.listwrap');if(!w)return;
+  listFitHeight();
+  if(sc){w.scrollLeft=sc.l;w.scrollTop=sc.t;}
+  if(listState.focusFilter){const f=w.querySelector(`.lfilt[data-filt="${listState.focusFilter}"]`);listState.focusFilter=null;
+    if(f)f.focus(PF);return;}
+  if(listState.active){const td=w.querySelector(`td.lc[data-id="${listState.active.id}"][data-col="${listState.active.col}"]`);
+    if(td){td.classList.add('active');if(listState.refocus)td.focus(PF);
+      if(listState.moveAfter){const m=listState.moveAfter;listState.moveAfter=null;listMoveFrom(td,m.dr,m.dc);}}}
+  listState.refocus=false;listState.moveAfter=null;
+}
+/* tabellen fylder resten af vinduet, så den er ét samlet scroll-område */
+function listFitHeight(){
+  const w=document.querySelector('.listwrap');if(!w)return;
+  w.style.maxHeight=Math.max(320,window.innerHeight-w.getBoundingClientRect().top-18)+'px';
+}
+window.addEventListener('resize',()=>{if(currentView==='liste')listFitHeight();});
+function listSort(k){
+  const s=listState.sort;
+  listState.sort=!s||s.k!==k?{k,dir:1}:s.dir>0?{k,dir:-1}:null;
+  render();
+}
+function listFilter(k,v){listState.filters[k]=v;listState.focusFilter=k;render();}
+function listResetCols(){listState.sort=null;listState.filters={};render();}
+/* markering af celle */
+function listOnFocus(td){
+  if(!td.isConnected||td.classList.contains('active'))return;
+  document.querySelectorAll('td.lc.active').forEach(x=>x.classList.remove('active'));
+  td.classList.add('active');listState.active={id:td.dataset.id,col:td.dataset.col};
+}
+function listActivate(td){listOnFocus(td);td.focus(PF);listScrollTo(td);}
+/* scroll cellen frem, så den ikke ligger skjult under de frosne kolonner eller den frosne overskrift
+   (alt måles med getBoundingClientRect — offsetTop/offsetLeft er upålidelige for sticky-celler) */
+function listScrollTo(td){
+  const w=td.closest('.listwrap');if(!w)return;
+  const f1=w.querySelector('th.lfirst'),f2=w.querySelector('th.ltitle');
+  const frozenW=(f1?f1.offsetWidth:0)+(f2?f2.offsetWidth:0);
+  const th=w.querySelector('thead'),headH=th?th.offsetHeight:0;
+  const frozen=td.classList.contains('lfirst')||td.classList.contains('ltitle');
+  const wr=w.getBoundingClientRect(),r=td.getBoundingClientRect();
+  const top=r.top-wr.top-w.clientTop,bottom=r.bottom-wr.top-w.clientTop;
+  const left=r.left-wr.left-w.clientLeft,right=r.right-wr.left-w.clientLeft;
+  if(!frozen){
+    if(left<frozenW)w.scrollLeft-=frozenW-left;
+    else if(right>w.clientWidth)w.scrollLeft+=right-w.clientWidth;
+  }
+  if(top<headH)w.scrollTop-=headH-top;
+  else if(bottom>w.clientHeight)w.scrollTop+=bottom-w.clientHeight;
+}
+function listCellClick(td){
+  if(td.classList.contains('editing'))return;
+  const was=listState.pre;listState.pre=false;
+  const id=td.dataset.id,col=td.dataset.col;
+  listLeaveAll(td);   /* gemmer evt. igangværende redigering i en anden celle */
+  if(!td.isConnected)td=document.querySelector(`td.lc[data-id="${id}"][data-col="${col}"]`);   /* tabellen kan være gentegnet */
+  if(!td)return;
+  listActivate(td);
+  if(was)listEdit(td);   /* klik på en allerede markeret celle åbner redigering */
+}
+/* redigering af en celle */
+function listEdit(td,seed){
+  if(!canEdit())return showLogin();
+  const s=listSub(td.dataset.id),col=listCol(td.dataset.col);if(!s||!col)return;
+  if(col.parentField&&!s[col.parentField])return;   /* fx delkapabilitet uden kapabilitet */
+  listLeaveAll(td);
+  if(!td.isConnected)return;
+  td.classList.add('editing');td.innerHTML=listEditorHtml(s,col);
+  const el=td.querySelector('input,select');if(!el)return;
+  el.focus(PF);
+  if(el.tagName==='INPUT'){if(seed!=null){el.value=seed;}else el.select();}
+}
+/* forlad redigering UDEN at gemme (Esc) */
+function listCancel(td){
+  if(!td||!td.isConnected||!td.classList.contains('editing'))return;
+  const s=listSub(td.dataset.id),col=listCol(td.dataset.col);
+  td.classList.remove('editing');td.innerHTML=s&&col?listCellInner(s,col):'';
+}
+const listCancelFocus=td=>{listCancel(td);td.focus(PF);};
+/* forlad redigering og gem en evt. ændret tekst (klik andetsteds, Tab, blur) */
+function listLeave(td){
+  if(!td||!td.isConnected||!td.classList.contains('editing'))return;
+  const inp=td.querySelector('input[type=text]');
+  if(inp&&inp.value.trim()!==inp.dataset.orig&&(inp.value.trim()||td.dataset.col!=='title')){listSet(td.dataset.id,td.dataset.col,inp.value.trim());return;}
+  const sel=td.querySelector('select:not(.ladd)');
+  if(sel&&listSelDirty(sel,td)){listSet(td.dataset.id,td.dataset.col,sel.value);return;}
+  listCancel(td);
+}
+function listLeaveAll(except){document.querySelectorAll('td.lc.editing').forEach(td=>{if(td!==except)listLeave(td);});}
+function listEdKey(e,el){
+  const td=el.closest('td.lc');
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();listCancelFocus(td);return;}
+  if(e.key==='Tab'){e.preventDefault();e.stopPropagation();
+    const dir=e.shiftKey?-1:1;
+    if(el.tagName==='INPUT'&&el.value.trim()!==el.dataset.orig){listState.moveAfter={dr:0,dc:dir};listTextCommit(el);}
+    else{listCancelFocus(td);listMoveFrom(td,0,dir);}
+    return;}
+  if(e.key==='Enter'){e.preventDefault();e.stopPropagation();
+    if(el.tagName==='INPUT'){   /* Enter gemmer og går en række ned — som i Excel */
+      if(el.value.trim()!==el.dataset.orig){listState.moveAfter={dr:1,dc:0};listTextCommit(el);}
+      else{listCancelFocus(td);listMoveFrom(td,1,0);}
+    }
+    else if(el.classList.contains('ladd')){if(el.value)listRoleAdd(td.dataset.id,td.dataset.col,el.value);}
+    else{listSelChange(el,td.dataset.col);}
+    return;}
+  /* i en dropdown bladrer pil op/ned uden at gemme — Enter (eller klik på et valg) gemmer */
+  if(el.tagName==='SELECT'&&(e.key==='ArrowDown'||e.key==='ArrowUp')){
+    e.preventDefault();e.stopPropagation();
+    const n=el.options.length,i=el.selectedIndex+(e.key==='ArrowDown'?1:-1);
+    if(i>=0&&i<n)el.selectedIndex=i;
+    return;
+  }
+  e.stopPropagation();   /* øvrige taster hører til editoren, ikke til navigationen */
+}
+function listEdBlur(el){
+  setTimeout(()=>{const td=el.closest&&el.closest('td.lc');if(!td||!td.isConnected||!td.classList.contains('editing'))return;
+    if(td.contains(document.activeElement))return;
+    listLeave(td);},0);
+}
+function listTextCommit(el){
+  const td=el.closest('td.lc');if(!td)return;
+  const v=el.value.trim();
+  if(v===el.dataset.orig){listCancelFocus(td);return;}
+  listSet(td.dataset.id,td.dataset.col,v);
+}
+/* er dropdown'ens værdi ændret i forhold til det, der er gemt? */
+function listSelDirty(el,td){
+  const s=listSub(td.dataset.id);if(!s)return false;
+  const f=td.dataset.col,cur=f==='area'?areaOfSub(s):(s[f]||'');
+  return el.value!==cur;
+}
+function listSelChange(el,field){
+  const td=el.closest('td.lc');if(!td)return;
+  if(!listSelDirty(el,td)){listCancelFocus(td);return;}
+  listSet(td.dataset.id,field,el.value);
+}
+/* flyt markeringen dr rækker / dc kolonner fra td — stopper ved kanten */
+function listMoveFrom(td,dr,dc){
+  let row=td.parentElement;
+  if(dr)row=dr>0?row.nextElementSibling:row.previousElementSibling;
+  if(!row)return;
+  const ci=[...td.parentElement.querySelectorAll('td.lc')].indexOf(td);
+  const tc=[...row.querySelectorAll('td.lc')];
+  const nt=tc[Math.min(Math.max(ci+dc,0),tc.length-1)];
+  if(nt)listActivate(nt);
+}
+/* tastaturnavigation mellem cellerne (kun når selve cellen har fokus) */
+const NAV_KEYS={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],Home:[0,-999],End:[0,999]};
+function listKey(e){
+  const td=e.target.closest&&e.target.closest('td.lc');if(!td||e.target!==td)return;
+  const col=listCol(td.dataset.col);
+  const m=e.key==='Tab'?[0,e.shiftKey?-1:1]:Object.hasOwn(NAV_KEYS,e.key)?NAV_KEYS[e.key]:null;
+  if(m){e.preventDefault();listMoveFrom(td,m[0],m[1]);return;}
+  if(e.key==='Enter'||e.key==='F2'){e.preventDefault();listEdit(td);return;}
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if((col.type==='reg'||col.type==='status'||col.k==='note')&&listSub(td.dataset.id)&&listSub(td.dataset.id)[col.k]){e.preventDefault();listState.refocus=true;listSet(td.dataset.id,col.k,'');}
+    return;
+  }
+  if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();listEdit(td,col.type==='text'?e.key:null);}
+}
+/* skriv ændringen ind på delprocessen, log forskellen og gem */
+function listCommit(before,s){
+  const ch=subDiff(before,s);
+  if(ch.length){logChange('Redigerede delprocessen '+qt(s.title)+': '+ch.join(', '));saveDb();}
+  listRefresh();
+  if(drawerId===s.id&&!editBuf)renderDrawerView();
+}
+function listSet(id,field,val){
+  if(!canEdit())return showLogin();
+  const s=listSub(id);if(!s)return;
+  const before=clone(s);
+  if(field==='title'){
+    const v=String(val||'').trim();
+    if(!v){alert('Delprocessen skal have et navn.');listRefresh();return;}
+    if(v!==s.title&&planIndex[s.id]&&planIndex[s.id].size&&!confirm(planIndex[s.id].size+' enhed(er) har planlægningsdata på delprocessen. Omdøb alligevel? (Enhedernes planer følger med delprocessen.)')){listRefresh();return;}
+    s.title=v;
+  }else if(field==='area'){
+    const first=mainsOfArea(val)[0];
+    if(!first){alert('Procesområdet har ingen hovedprocesser endnu — opret en under Struktur & organisation.');listRefresh();return;}
+    s.main=first.id;
+  }else if(field==='main'){
+    s.main=val;
+  }else if(field==='note'){
+    s.note=String(val||'').trim();
+  }else if(field==='status'){
+    s.status=STATUS_VALUES.includes(val)?val:'';
+  }else{
+    const col=listCol(field);if(!col||col.type!=='reg')return;
+    if(val==='__new'){
+      const x=promptNewRef(col.reg,col.parentField?s[col.parentField]:'');
+      if(!x){listRefresh();return;}
+      val=x.id;
+    }
+    s[field]=val;
+    syncChild(s,field,val);
+  }
+  listCommit(before,s);
+}
+function listRoleAdd(id,k,val){
+  if(!canEdit())return showLogin();
+  const s=listSub(id);if(!s||!val)return;
+  normalizeSub(s);
+  const before=clone(s);
+  if(String(val).startsWith('__new')){
+    const x=newRoleRef(roleDef(k),val);
+    if(!x){listRefresh();return;}
+    val=x.id;
+  }
+  if(!s.roles[k].includes(val))s.roles[k].push(val);
+  listCommit(before,s);
+}
+function listRoleRemove(id,k,uid){
+  if(!canEdit())return showLogin();
+  const s=listSub(id);if(!s)return;
+  normalizeSub(s);
+  const before=clone(s);
+  s.roles[k]=s.roles[k].filter(x=>x!==uid);
+  listCommit(before,s);
+}
+
+/* ============================================================
+   STRUKTUR & ORGANISATION (modal)
+   ============================================================ */
+let settingsTab='mains';
+function openSettings(){if(!canEdit())return showLogin();settingsTab='mains';renderSettings();$('settings').classList.add('open');}
+function closeSettings(){commitRenames();$('settings').classList.remove('open');}
+const regTabs=list=>list.map(r=>`<button class="${settingsTab===r?'on':''}" onclick="settingsTab='${r}';renderSettings()">${esc(REGS[r].label)} (${db[r].length})</button>`).join('');
+const svgUp=arrow(14,2,1),svgDn=arrow(14,2,0);
+/* op/ned-knapper; fn(arg,...) kaldes med dir ±1 */
+const mvBtns=(first,last,call)=>`<button class="iconbtn mv" ${first?'disabled':''} title="Flyt op" onclick="${call},-1)">${svgUp}</button><button class="iconbtn mv" ${last?'disabled':''} title="Flyt ned" onclick="${call},1)">${svgDn}</button>`;
+const delBtn=(used,title,call)=>`<button class="iconbtn" ${used?`disabled title="${title}"`:''} onclick="${call}">×</button>`;
+const grpHead=(name,color)=>`<div style="font-family:Spectral;font-weight:600;font-size:14px;margin:14px 0 4px;color:${color}">${esc(name)}</div>`;
+const nameInput=(coll,i,field,val,extra='')=>`<input type="text" value="${esc(val)}" onblur="commitRenames()" oninput="editName('${coll}',${i},'${field}',this.value)"${extra}>`;
+const hintBox=t=>`<div style="font-size:11.5px;color:var(--faint);margin-top:10px">${t}</div>`;
+function renderSettings(){
+  const m=$('settings');let body='';
+  if(settingsTab==='areas'){
+    body=db.areas.map((a,i)=>`<div class="editline area"><span class="swatchsm" style="background:${areaColor(a.id)}"></span>${nameInput('areas',i,'name',a.name)}${mvBtns(i===0,i===db.areas.length-1,`moveArea(${i}`)}${delBtn(mainsOfArea(a.id).length,'Har hovedprocesser',`removeArea(${i})`)}</div>`).join('')
+      +`<button class="addlink" onclick="addArea()">+ Tilføj procesområde</button>`+hintBox('Rækkefølgen her styrer, hvordan procesområderne vises i Emne og Tvær — og hvilken farve de får.');
+  }else if(settingsTab==='mains'){
+    body=db.areas.map(a=>grpHead(a.name,areaColor(a.id))+
+      mainsOfArea(a.id).map((mn,idx,arr)=>{const i=db.mains.findIndex(x=>x.id===mn.id);
+        return `<div class="editline main">${nameInput('mains',i,'title',mn.title)}<select onchange="setMainArea(${i},this.value)">${db.areas.map(x=>opt(x.id,x.name,mn.area)).join('')}</select>${mvBtns(idx===0,idx===arr.length-1,`moveMain('${mn.id}'`)}${delBtn(subsOfMain(mn.id).length,'Har delprocesser',`removeMain('${mn.id}')`)}</div>`;}).join('')
+    ).join('')+`<button class="addlink" onclick="addMain()">+ Tilføj hovedproces</button>`;
+  }else if(REGS[settingsTab]){
+    const reg=settingsTab,cfg=REGS[reg],isUnit=cfg.kind==='unit',isChild=!!cfg.parent,pOne=isChild?REGS[cfg.parent].one:'';
+    const moveSel=(x,i)=>isUnit?`<select title="Flyt til andet enhedsregister" onchange="moveReg('${reg}',${i},this.value)">${UNIT_REGS.map(r=>opt(r,REGS[r].label,reg)).join('')}</select>`
+      :isChild?`<select title="Hører til ${esc(pOne)}" onchange="setRegParent('${reg}',${i},this.value)"><option value="">Uden ${esc(pOne)}</option>${regList(cfg.parent).map(k=>opt(k.id,k.name,x.parent)).join('')}</select>`:'';
+    const ordered=ORDERED_REGS.includes(reg);
+    const cls=(isUnit||isChild)?(ordered?'unit3m':'unit3'):(ordered?'unitm':'unit');
+    /* én række i registret; pos/n = placering blandt de rækker pilene flytter imellem */
+    const rowHtml=(i,pos,n,mvFn)=>{const x=db[reg][i],used=regUsed(reg,x.id);
+      return `<div class="editline ${cls}">${nameInput(reg,i,'name',x.name,` placeholder="${esc(cfg.placeholder)}"`)}${moveSel(x,i)}<span class="em">${used} delpr.</span>${ordered?mvBtns(pos===0,pos===n-1,`${mvFn}('${reg}',${i}`):''}${delBtn(used,'Bruges i delprocesser',`removeReg('${reg}',${i})`)}</div>`;};
+    let rows='';
+    if(isChild&&ordered){
+      /* underregister med rækkefølge (arbejdsfællesskaber): grupperet under det overordnede, som hovedprocesser under procesområder */
+      const groups=[...db[cfg.parent].map(p=>({id:p.id,name:p.name})),{id:'',name:'Uden '+pOne}];
+      rows=groups.map(g=>{
+        const idx=db[reg].map((x,i)=>i).filter(i=>(db[reg][i].parent||'')===g.id);
+        if(!idx.length&&!g.id)return '';
+        return grpHead(g.name,g.id?REGS[cfg.parent].color:'var(--faint)')
+          +(idx.length?idx.map((i,pos)=>rowHtml(i,pos,idx.length,'moveRegSibling')).join(''):`<div style="font-size:12.5px;color:var(--faint);padding:4px 0 6px">Ingen endnu.</div>`);
+      }).join('');
+    }else{
+      const order=isChild?db[reg].map((x,i)=>i).sort((a,b)=>{
+          const pa=db[cfg.parent].findIndex(k=>k.id===db[reg][a].parent),pb=db[cfg.parent].findIndex(k=>k.id===db[reg][b].parent);
+          return (pa<0?9e9:pa)-(pb<0?9e9:pb)||byName(db[reg][a],db[reg][b]);})
+        :db[reg].map((x,i)=>i);
+      rows=order.map((i,pos)=>rowHtml(i,pos,order.length,'moveRegPos')).join('');
+    }
+    const HINTS={
+      delkapabiliteter:'Hver delkapabilitet hører til én kapabilitet. På delprocessen kan du kun vælge blandt delkapabiliteterne under den valgte kapabilitet.',
+      workgroups:'Hvert arbejdsfællesskab hører til ét lederteam. På delprocessen kan du kun vælge blandt arbejdsfællesskaberne under det valgte lederteam.',
+      kapabiliteter:'Delkapabiliteterne knyttes til kapabiliteterne herfra — se fanen Delkapabilitet.',
+      leaderteams:'Arbejdsfællesskaberne knyttes til lederteams herfra — se fanen Arbejdsfællesskab.'};
+    const hint=cfg.kind==='owner'
+      ? 'Skriv kun FUNKTIONEN (fx en stillingsbetegnelse) — aldrig navne. Navne vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen.'
+      : HINTS[reg]||(isUnit
+      ? 'Dropdownen flytter enheden til et andet enhedsregister; alle delprocesser følger med. Konsulteres (C) og Informeres (I) kan vælge frit på tværs af de tre enhedsregistre.'
+      : 'Bruges på delprocesserne og som niveau i Tvær-visningen.');
+    body=(rows||`<div style="font-size:13px;color:var(--faint);padding:6px 0">Ingen ${esc(cfg.label.toLowerCase())} endnu.</div>`)
+      +`<button class="addlink" onclick="addReg('${reg}')">+ Tilføj ${esc(cfg.one)}</button>`+hintBox(hint+(ordered?' Pilene styrer rækkefølgen — den bruges i visninger, filtre og dropdowns.':''));
+  }
+  const tab=(id,label)=>`<button class="${settingsTab===id?'on':''}" onclick="settingsTab='${id}';renderSettings()">${label}</button>`;
+  m.innerHTML=modalBox('Struktur & organisation','closeSettings()',`<div class="tabbar">
+      ${tab('areas',`Procesområder (${db.areas.length})`)}${tab('mains',`Hovedprocesser (${db.mains.length})`)}
+      ${regTabs(['kapabiliteter','delkapabiliteter'])}<div class="brk"></div>
+      ${regTabs(UNIT_REGS)}<div class="brk"></div>
+      ${regTabs(['procesejere','driftejere'])}<div class="brk"></div>
+      ${regTabs(['leaderteams','workgroups'])}
+    </div>
+    <div class="mbody">${body}</div>`);
+}
+let saveDebounce=null,pendingRename={};
+function scheduleSave(){clearTimeout(saveDebounce);saveDebounce=setTimeout(()=>{saveDb();render();},500);}
+/* navneændringer: data gemmes løbende (debounced), men logbeskeden skrives først samlet, når feltet forlades eller modalen lukkes */
+const KIND_WORD={areas:'procesområdet',mains:'hovedprocessen'};
+function editName(coll,i,field,val){
+  const x=db[coll][i];if(!x)return;
+  const key=coll+'|'+x.id;
+  if(!(key in pendingRename))pendingRename[key]={coll,id:x.id,old:x[field]};
+  x[field]=val;scheduleSave();
+}
+function flushRenames(){
+  let n=0;
+  Object.values(pendingRename).forEach(p=>{
+    const x=(db[p.coll]||[]).find(y=>y.id===p.id);if(!x)return;
+    const now=x.name!==undefined?x.name:x.title;
+    if(now===p.old||!String(now).trim())return;
+    const what=KIND_WORD[p.coll]||(REGS[p.coll]?REGS[p.coll].one:p.coll);
+    logChange('Omdøbte '+what+' '+qt(p.old)+' → '+qt(now));n++;
+  });
+  pendingRename={};
+  return n;
+}
+function commitRenames(){if(flushRenames()){clearTimeout(saveDebounce);saveDebounce=null;saveDb();}}
+/* gem + gentegn modal (og evt. hovedvisningen) */
+function saveRS(r){saveDb();renderSettings();if(r)render();}
+function setMainArea(i,aid){const m=db.mains[i];if(!m)return;m.area=aid;logChange('Flyttede hovedprocessen '+qt(m.title)+' til procesområdet '+qt(area(aid).name));saveRS(1);}
+function addArea(){let n=1;const ids=new Set(db.areas.map(a=>a.id));while(ids.has('o'+n))n++;db.areas.push({id:'o'+n,name:'Nyt procesområde'});logChange('Oprettede et nyt procesområde');saveRS();}
+function removeArea(i){logChange('Slettede procesområdet '+qt(db.areas[i].name));db.areas.splice(i,1);saveRS(1);}
+function moveArea(i,dir){const x=db.areas[i];if(!swapWithin(db.areas,x,db.areas,dir))return;logChange('Flyttede procesområdet '+qt(x.name)+' '+dirWord(dir));saveRS(1);}
+function addMain(){db.mains.push({id:'h'+Date.now(),area:firstArea(),title:'Ny hovedproces'});logChange('Oprettede en ny hovedproces');saveRS();}
+function removeMain(id){logChange('Slettede hovedprocessen '+qt(mainById(id).title));db.mains=db.mains.filter(m=>m.id!==id);saveRS(1);}
+function moveMain(id,dir){const m=db.mains.find(x=>x.id===id);if(!m)return;if(!swapWithin(db.mains,m,db.mains.filter(x=>x.area===m.area),dir))return;logChange('Flyttede hovedprocessen '+qt(m.title)+' '+dirWord(dir));saveRS(1);}
+function addReg(reg){const x={id:REGS[reg].pre+Date.now().toString(36),name:'Ny '+REGS[reg].one};if(REGS[reg].parent)x.parent='';db[reg].push(x);logChange('Oprettede '+(REGS[reg].kind==='owner'?'en ny ':'ny ')+REGS[reg].one);saveRS();}
+function setRegParent(reg,i,parentId){
+  const x=db[reg][i];if(!x)return;
+  const p=REGS[reg].parent,f=REF_FIELDS[reg],pf=REF_FIELDS[p];
+  x.parent=parentId;
+  logChange('Knyttede '+REGS[reg].one+' '+qt(x.name)+' til '+(parentId?REGS[p].one+' '+qt(rawRegName(p,parentId)):'ingen '+REGS[p].one));
+  /* delprocesser med denne delkapabilitet/dette arbejdsfællesskab skal have den rigtige kapabilitet/det rigtige lederteam */
+  if(parentId)db.subs.forEach(s=>{if(s[f]===x.id)s[pf]=parentId;});
+  saveRS(1);
+}
+function removeReg(reg,i){logChange('Slettede '+REGS[reg].one+' '+qt(db[reg][i].name));db[reg].splice(i,1);saveRS(1);}
+function moveRegPos(reg,i,dir){const x=db[reg][i];if(!swapWithin(db[reg],x,db[reg],dir))return;logChange('Flyttede '+REGS[reg].one+' '+qt(x.name)+' '+dirWord(dir));saveRS(1);}
+/* flyt inden for søskende med samme overordnede */
+function moveRegSibling(reg,i,dir){const x=db[reg][i];if(!x)return;if(!swapWithin(db[reg],x,db[reg].filter(y=>(y.parent||'')===(x.parent||'')),dir))return;logChange('Flyttede '+REGS[reg].one+' '+qt(x.name)+' '+dirWord(dir));saveRS(1);}
+function moveReg(reg,i,to){
+  if(!to||to===reg||!REGS[to])return;
+  const x=db[reg][i];if(!x)return;
+  db[reg].splice(i,1);db[to].push(x);
+  logChange('Flyttede enheden '+qt(x.name)+' fra '+qt(REGS[reg].label)+' til '+qt(REGS[to].label));
+  saveRS(1);
+}
+
+/* ============================================================
+   DATA: eksport / import
+   ============================================================ */
+function resetUi(){ui.openAreas=new Set();ui.openMains=new Set();ui.openKeys=new Set();filters={q:'',area:[],lt:[],pe:[],unit:[]};ui.openFilter=null;const q=$('f-q');if(q)q.value='';}
+const NO_XLSX='Excel-værktøjet kunne ikke indlæses (kræver internetadgang).';
+const W=a=>a.map(wch=>({wch}));
+function exportXLSX(){
+  closeMenu();
+  if(!canEdit())return showLogin();
+  if(typeof XLSX==='undefined'){alert('Excel-værktøjet kunne ikke indlæses — det kræver internetadgang første gang siden åbnes.');return;}
+  const aN=id=>{const a=db.areas.find(x=>x.id===id);return a?a.name:'';};
+  const del=db.subs.map(s=>{
+    const m=db.mains.find(x=>x.id===s.main)||{};
+    const row={'ID':s.id,'Procesområde':aN(m.area),'Hovedproces-ID':s.main,'Hovedproces':m.title||'','Delproces':s.title,
+      'Kapabilitet':kapName(s),'Delkapabilitet':delkapName(s),'Lederteam':ltName(s),'Arbejdsfællesskab':afName(s)};
+    /* rawAnyName: for procesejer/driftsejer eksporteres funktionen — aldrig navnet */
+    ROLE_DEFS.forEach(d=>{row[d.col]=roleIds(s,d.k).map(rawAnyName).join('; ');});
+    row['Ændringsstatus']=s.status||'';row['Ændringsbeskrivelse']=s.note||'';
+    return row;
+  });
+  const regSheet=reg=>db[reg].map(x=>OWNER_REGS.includes(reg)?{'ID':x.id,'Funktion':x.name}
+    :REGS[reg].parent?{'ID':x.id,'Navn':x.name,[REGS[REGS[reg].parent].label]:regName(REGS[reg].parent,x.parent)}:{'ID':x.id,'Navn':x.name});
+  try{
+    const wb=XLSX.utils.book_new();
+    const add=(rows,name,wch)=>{const ws=XLSX.utils.json_to_sheet(rows);if(wch)ws['!cols']=wch;XLSX.utils.book_append_sheet(wb,ws,name);};
+    add(del,'Delprocesser',W([9,24,14,30,40,24,24,26,26,26,26,28,28,28,26,26,14,80]));
+    REG_KEYS.forEach(r=>add(regSheet(r),REGS[r].sheet,W(REGS[r].parent?[9,34,30]:[9,34])));
+    add(db.areas.map((a,i)=>({'Nr':i+1,'ID':a.id,'Navn':a.name})),'Procesområder',W([6,9,30]));
+    add(db.mains.map(m=>({'Procesområde-ID':m.area,'Procesområde':aN(m.area),'Hovedproces-ID':m.id,'Hovedproces':m.title})),'Struktur',W([14,26,14,34]));
+    XLSX.writeFile(wb,'proceslandskab.xlsx');
+  }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
+}
+/* læs en Excel-fil og kald fn(workbook); fejl vises med errMsg(e) */
+function readXlsx(file,fn,errMsg){
+  if(typeof XLSX==='undefined'){alert(NO_XLSX);return;}
+  const r=new FileReader();
+  r.onload=e=>{try{fn(XLSX.read(e.target.result,{type:'array'}));}catch(err){alert(errMsg(err));}};
+  r.readAsArrayBuffer(file);
+}
+const str=v=>String(v||'').trim();
+function importXLSX(file){if(!canEdit())return showLogin();
+  readXlsx(file,wb=>{
+      const sheet=n=>wb.Sheets[n]?XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''}):null;
+      const delRows=sheet('Delprocesser')||sheet(wb.SheetNames[0]);
+      if(!delRows||!delRows.length)throw new Error('arket »Delprocesser« mangler eller er tomt');
+      const strukRows=sheet('Struktur');
+      let idc=0;const newId=p=>p+Date.now().toString(36)+(idc++);
+      const nd={areas:[],mains:[],subs:[]};
+      const byNm={};
+      const regFrom=reg=>{
+        const alt=[REGS[reg].sheet,...(REGS[reg].alt||[]),...(reg==='unitsUdd'?['Enheder']:[])];
+        let rows=null;for(const nm of alt){rows=sheet(nm);if(rows&&rows.length)break;}
+        /* ejerregistre: kolonnen hedder "Funktion" (ældre filer kan have "Navn") */
+        const val=x=>str(OWNER_REGS.includes(reg)?(x['Funktion']||x['Navn']):x['Navn']);
+        nd[reg]=(rows&&rows.length)?rows.filter(x=>val(x)).map(x=>({id:str(x['ID'])||newId(REGS[reg].pre),name:val(x)})):[];
+        byNm[reg]={};nd[reg].forEach(x=>byNm[reg][x.name.trim().toLowerCase()]=x.id);
+        return nm=>{const k=str(nm);if(!k)return '';const lk=k.toLowerCase();
+          if(!byNm[reg][lk]){const x={id:newId(REGS[reg].pre),name:k};nd[reg].push(x);byNm[reg][lk]=x.id;}return byNm[reg][lk];};};
+      const mk={};REG_KEYS.forEach(r=>{mk[r]=regFrom(r);});
+      /* underregistre (delkapabilitet/arbejdsfællesskab): overordnet fra eget ark, og opslag inden for den overordnede */
+      const childId={};
+      ['delkapabiliteter','workgroups'].forEach(reg=>{
+        const p=REGS[reg].parent;
+        ([REGS[reg].sheet,...(REGS[reg].alt||[])].map(sheet).find(Boolean)||[]).forEach(x=>{const nm=str(x['Navn']);if(!nm)return;
+          const d=nd[reg].find(y=>y.name.trim().toLowerCase()===nm.toLowerCase());
+          if(d)d.parent=mk[p](x[REGS[p].label])||'';});
+        childId[reg]=(nm,pid)=>{const key=str(nm);if(!key)return '';
+          const lk=key.toLowerCase();
+          let d=nd[reg].find(y=>y.name.trim().toLowerCase()===lk&&(!pid||!y.parent||y.parent===pid));
+          if(!d){d={id:newId(REGS[reg].pre),name:key,parent:pid||''};nd[reg].push(d);}
+          else if(pid&&!d.parent)d.parent=pid;
+          return d.id;};
+      });
+      const splitNames=s=>String(s||'').split(/[;\n]/).map(x=>x.trim()).filter(Boolean);
+      /* C og I kan pege på alle tre enhedsregistre — kendte navne genbruges, nye lander under andre ADM */
+      const anyUnitId=nm=>{const lk=str(nm).toLowerCase();if(!lk)return '';
+        for(const r of UNIT_REGS)if(byNm[r][lk])return byNm[r][lk];
+        return mk.unitsAdm(nm);};
+      /* struktur: enten fra Struktur-arket eller udledt af Delprocesser */
+      const areaByName={},mainByKey={};
+      const addArea=(id,name)=>{const a={id,name};nd.areas.push(a);areaByName[name.toLowerCase()]=a.id;return a.id;};
+      const areaId=nm=>{const key=str(nm)||'Uden procesområde';return areaByName[key.toLowerCase()]||addArea(newId('o'),key);};
+      (sheet('Procesområder')||[]).forEach(x=>{const an=str(x['Navn']);if(an&&!areaByName[an.toLowerCase()])addArea(str(x['ID'])||newId('o'),an);});
+      if(strukRows&&strukRows.length){
+        strukRows.forEach(x=>{const an=str(x['Procesområde']);if(an&&!areaByName[an.toLowerCase()])addArea(str(x['Procesområde-ID'])||newId('o'),an);});
+        strukRows.forEach(x=>{const mid=str(x['Hovedproces-ID']),mt=str(x['Hovedproces']);
+          if(!mt&&!mid)return;const aid=areaId(x['Procesområde']);
+          const m={id:mid||newId('h'),area:aid,title:mt};nd.mains.push(m);mainByKey[(aid+'|'+mt.toLowerCase())]=m.id;});
+      }
+      const mainId=(aid,title)=>{const t=str(title)||'Uden hovedproces';const key=aid+'|'+t.toLowerCase();
+        if(!mainByKey[key]){const m={id:newId('h'),area:aid,title:t};nd.mains.push(m);mainByKey[key]=m.id;}return mainByKey[key];};
+      nd.subs=delRows.filter(x=>str(x['Delproces'])).map(x=>{
+        const aid=areaId(x['Procesområde']),mid=mainId(aid,x['Hovedproces']),kapId=mk.kapabiliteter(x['Kapabilitet']);
+        const roles={};
+        ROLE_DEFS.forEach(d=>{const names=splitNames(x[d.col]);roles[d.k]=names.map(d.regs.length>1?anyUnitId:mk[d.regs[0]]).filter(Boolean);});
+        const ltIdVal=mk.leaderteams(x['Lederteam']),st=str(x['Ændringsstatus']);
+        return {id:str(x['ID'])||newId('d'),main:mid,title:str(x['Delproces']),
+          kap:kapId,delkap:childId.delkapabiliteter(x['Delkapabilitet'],kapId),
+          lederteam:ltIdVal,arbfael:childId.workgroups(x['Arbejdsfællesskab']||x['Arbejdsfaellesskab'],ltIdVal),
+          roles,status:STATUS_VALUES.includes(st)?st:'',note:str(x['Ændringsbeskrivelse'])};
+      });
+      if(!nd.subs.length)throw new Error('ingen delprocesser fundet');
+      /* fjern hovedprocesser uden delprocesser (kan opstå fra Struktur-arket) */
+      const usedMains=new Set(nd.subs.map(s=>s.main));
+      nd.mains=nd.mains.filter(m=>usedMains.has(m.id)||!strukRows);
+      const usedAreas=new Set(nd.mains.map(m=>m.area));
+      nd.areas=nd.areas.filter(a=>usedAreas.has(a.id));
+      nd.log=Array.isArray(db.log)?db.log:[];
+      db=nd;normalizeDb();
+      const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder';
+      logChange('Importerede hele landskabet fra Excel: '+sum);
+      resetUi();saveDb();render();
+      alert('Importeret: '+sum+'.');
+  },err=>'Kunne ikke importere Excel-filen ('+err.message+'). Tjek at arkene hedder Delprocesser / Enheder / Struktur — se appens egen eksport.');
+}
+
+/* NAVNE FRA EXCEL — kun i hukommelsen. Fanen "Navne" med kolonnerne ID, Funktion, Navn. Genindlæses efter refresh. */
+function importNavne(file){
+  readXlsx(file,wb=>{
+      /* fanen "Navne" — ellers første fane med kolonnerne ID og Navn */
+      const toJson=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});
+      let rows=wb.Sheets['Navne']?toJson('Navne'):null;
+      if(!rows||!rows.length)for(const nm of wb.SheetNames){const rs=toJson(nm);if(rs.length&&('ID'in rs[0])&&('Navn'in rs[0])){rows=rs;break;}}
+      if(!rows||!rows.length)throw new Error('fanen »Navne« mangler eller er tom');
+      const map={};let n=0;
+      rows.forEach(x=>{const id=str(x['ID']),navn=str(x['Navn']);if(id&&navn){map[id]=navn;n++;}});
+      if(!n)throw new Error('ingen rækker med både ID og Navn');
+      navnOpslag=map;
+      render();renderNavnStatus();
+      if(drawerId&&!editBuf)renderDrawerView();else if(editBuf)renderRolesEdit();
+  },err=>'Kunne ikke læse navnearket ('+err.message+'). Tjek at der er en fane »Navne« med kolonnerne ID, Funktion og Navn.');
+}
+function renderNavnStatus(){
+  const el=$('navnstat'),btn=$('btn-navne');
+  if(!el)return;
+  const n=Object.keys(navnOpslag).length;
+  el.className='menustat'+(n?' ok':'');
+  el.textContent=n?`Navne indlæst — ${plural(n,'person','personer')} (kun i denne fane, gemmes ikke).`:'Navne ikke indlæst — hent navnearket fra Teams. Indtil da vises funktioner.';
+  if(btn)btn.textContent=n?'Indlæs navne igen (Excel)':'Indlæs navne (Excel)';
+}
+
+/* ============================================================
+   LOGIN (Supabase Auth) — alle kan SE (kræver RLS SELECT for anon); redigering kræver login.
+   ============================================================ */
+let session=null,userRole=null;   /* userRole: {role:'admin'|'landskab'|'enhed', enhed} fra tabellen app_users */
+async function loadRole(){
+  userRole=null;
+  if(!session||!sb)return;
+  const email=(session.user&&session.user.email)||'';
+  if(!email)return;
+  try{
+    const {data,error}=await sb.from('app_users').select('role,enhed').ilike('email',email).maybeSingle();
+    if(!error&&data)userRole={role:data.role,enhed:data.enhed||''};
+  }catch(e){}
+}
+const canEdit=()=>!!session&&!!userRole&&(userRole.role==='landskab'||userRole.role==='admin');
+const isAdmin=()=>!!session&&!!userRole&&userRole.role==='admin';
+const canEditEnhed=uid=>!!session&&!!userRole&&userRole.role==='enhed'&&userRole.enhed===uid;
+async function initAuth(){
+  if(sb&&sbConfigured()){
+    try{const {data}=await sb.auth.getSession();session=(data&&data.session)||null;}catch(e){}
+    await loadRole();
+  }
+  $('app').style.display='';
+  applyAuthUi();
+  await loadDb();
+  render();renderNavnStatus();
+}
+/* slår redigerings-UI til/fra ud fra login-status */
+function applyAuthUi(){
+  const on=canEdit();
+  ['btn-new','btn-settings','mi-export','mi-import','sep-data','sep-log','mi-log','tab-liste','mi-migrate'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
+  ['mi-admin','sep-admin'].forEach(id=>{const el=$(id);if(el)el.style.display=isAdmin()?'':'none';});
+  const auth=$('btn-auth');
+  if(auth)auth.textContent=session?'Log ud':'Log ind';
+  /* Liste-fanen findes kun for indloggede; logges man ud derfra, falder man tilbage til Emne */
+  if(!on&&currentView==='liste'){setView('landskab');return;}
+  render();
+  if(drawerId&&!editBuf)renderDrawerView();
+}
+function showLogin(){
+  if(session){alert('Din bruger er logget ind, men har ikke rettigheder til denne handling.\n\nRoller tildeles af administratoren under Data → Brugere & rettigheder.');return;}
+  const err=$('login-err'),btn=$('login-btn');
+  err.textContent='';btn.disabled=false;btn.textContent='Log ind';
+  if(!sb||!sbConfigured()){
+    err.textContent=!sb?'Supabase-biblioteket kunne ikke indlæses — tjek internetforbindelsen og genindlæs siden.'
+      :'Supabase er ikke sat op endnu: indsæt Project URL og anon-nøgle øverst i filens script.';
+    btn.disabled=true;
+  }
+  $('login-screen').style.display='';
+  $('login-email').focus();
+}
+function hideLogin(){$('login-screen').style.display='none';}
+async function doLogin(){
+  const btn=$('login-btn'),err=$('login-err');
+  const email=$('login-email').value.trim(),password=$('login-pass').value;
+  if(!email||!password){err.textContent='Udfyld både e-mail og kodeord.';return;}
+  btn.disabled=true;btn.textContent='Logger ind…';err.textContent='';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    session=(data&&data.session)||{};
+    await loadRole();
+    $('login-pass').value='';
+    hideLogin();applyAuthUi();
+  }catch(e){
+    err.textContent='Kunne ikke logge ind — tjek e-mail og kodeord.';
+    btn.disabled=false;btn.textContent='Log ind';
+  }
+}
+async function logout(){
+  try{await sb.auth.signOut();}catch(e){}
+  session=null;userRole=null;
+  closeSettings();closeLog();
+  if(editBuf)cancelEdit();
+  uEditBuf=null;
+  applyAuthUi();
+  if(enhedOpen&&uDrawerSub)uRenderDrawerView();
+}
+
+/* ============================================================
+   STEL
+   ============================================================ */
+let currentView='landskab';
+const VIEWS={landskab:renderLandskab,matrix:renderMatrix,liste:renderListe,enhed:renderEnhed};
+function render(){
+  if(enhedOpen){renderEnhedPage();return;}
+  buildFilters();
+  /* Liste: husk scroll-position, så tabellen ikke hopper ved hver ændring */
+  const lw=currentView==='liste'?document.querySelector('.listwrap'):null;
+  const sc=lw?{l:lw.scrollLeft,t:lw.scrollTop}:null;
+  $('view').innerHTML=(VIEWS[currentView]||renderEnhed)();
+  if(currentView==='liste')listAfterRender(sc);
+}
+const SEG_BTNS=document.querySelectorAll('.seg button');
+function setView(v){
+  if(v==='liste'&&!canEdit())return showLogin();
+  currentView=v;
+  SEG_BTNS.forEach(x=>x.setAttribute('aria-selected',x.dataset.view===v?'true':'false'));
+  render();
+}
+/* ---------- filterdropdowns med flervalg ---------- */
+const FILTER_DEFS={
+  area:{all:'Alle procesområder',word:'procesområder',groups:()=>[{items:db.areas.map(a=>({id:a.id,name:a.name}))}]},
+  lt:{all:'Alle lederteams',word:'lederteams',groups:()=>{
+    const g=[{items:db.leaderteams.map(x=>({id:x.id,name:x.name}))}];
+    if(db.subs.some(s=>!s.lederteam))g[0].items.push({id:'',name:'Uden lederteam'});
+    return g;}},
+  pe:{all:'Alle procesejere',word:'procesejere',groups:()=>{
+    const g=[{items:db.procesejere.map(x=>({id:x.id,name:regName('procesejere',x.id)}))}];
+    if(db.subs.some(s=>!roleIds(s,'PE').length))g[0].items.push({id:'',name:'Uden procesejer'});
+    return g;}},
+  unit:{all:'Alle enheder',word:'enheder',groups:()=>{
+    const gs=UNIT_REGS.map(r=>({label:REGS[r].label,items:(db[r]||[]).map(u=>({id:u.id,name:u.name}))})).filter(g=>g.items.length);
+    const known=new Set(allUnitList().map(u=>u.id));
+    const orph=[...new Set(db.subs.flatMap(involved))].filter(id=>!known.has(id));
+    if(orph.length)gs.push({label:'Uden register',items:orph.sort((a,b)=>anyName(a).localeCompare(anyName(b),'da')).map(id=>({id,name:anyName(id)}))});
+    return gs;}}
+};
+function buildFilters(){
+  Object.keys(FILTER_DEFS).forEach(f=>{
+    const el=$('ms-'+f);if(!el)return;
+    const def=FILTER_DEFS[f],gs=def.groups(),valid=new Set(gs.flatMap(g=>g.items.map(i=>i.id)));
+    filters[f]=filters[f].filter(v=>valid.has(v));
+    const n=filters[f].length;
+    const txt=!n?def.all:n===1?(gs.flatMap(g=>g.items).find(i=>i.id===filters[f][0])||{name:''}).name:`${n} ${def.word} valgt`;
+    const body=gs.map(g=>(g.label?`<div class="mselgrp">${esc(g.label)}</div>`:'')+g.items.map(i=>
+      `<label onclick="event.stopPropagation()"><input type="checkbox" ${filters[f].includes(i.id)?'checked':''} onchange="toggleFilterVal('${f}','${jsq(i.id)}')">${esc(i.name)}</label>`).join('')).join('');
+    el.className='msel'+(n?' on':'')+(ui.openFilter===f?' open':'');
+    el.innerHTML=`<button class="mselbtn" onclick="toggleFilterPanel('${f}',event)">
+        <span class="mtxt">${esc(txt)}</span>${n>1?`<span class="cnt">${n}</span>`:''}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="mselpanel" onclick="event.stopPropagation()">
+        ${body||'<div class="mselempty">Ingen værdier endnu</div>'}
+        <div class="mselfoot"><button onclick="clearFilter('${f}')">Ryd valg</button><button onclick="closeFilterPanels(true)">Luk</button></div>
+      </div>`;
+  });
+}
+function toggleFilterPanel(f,e){
+  if(e)e.stopPropagation();
+  ui.openFilter=ui.openFilter===f?null:f;
+  buildFilters();
+}
+function toggleFilterVal(f,v){
+  const i=filters[f].indexOf(v);
+  if(i>=0)filters[f].splice(i,1);else filters[f].push(v);
+  expandMatches();render();
+}
+function clearFilter(f){filters[f]=[];expandMatches();render();}
+function closeFilterPanels(rerender){if(ui.openFilter===null)return;ui.openFilter=null;if(rerender)buildFilters();}
+
+const evt=(id,ev,fn)=>$(id).addEventListener(ev,fn);
+SEG_BTNS.forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+let qTimer=null;
+evt('f-q','input',e=>{clearTimeout(qTimer);const v=e.target.value;qTimer=setTimeout(()=>{filters.q=v.trim();expandMatches();render();},200);});
+evt('btn-new','click',()=>newSub());
+evt('btn-settings','click',openSettings);
+evt('import-xlsx','change',e=>{if(e.target.files[0])importXLSX(e.target.files[0]);e.target.value='';});
+evt('import-navne','change',e=>{if(e.target.files[0])importNavne(e.target.files[0]);e.target.value='';});
+evt('btn-auth','click',()=>{session?logout():showLogin();});
+evt('login-close','click',hideLogin);
+evt('login-screen','click',e=>{if(e.target.id==='login-screen')hideLogin();});
+evt('login-btn','click',doLogin);
+evt('login-pass','keydown',e=>{if(e.key==='Enter')doLogin();});
+evt('login-email','keydown',e=>{if(e.key==='Enter')$('login-pass').focus();});
+const dataMenu=$('data-menu');
+evt('btn-data','click',e=>{e.stopPropagation();dataMenu.classList.toggle('open');});
+function closeMenu(){dataMenu.classList.remove('open');}
+document.addEventListener('click',()=>{closeMenu();closeFilterPanels(true);listCloseColMenu();});
+evt('scrim','click',closeDrawer);
+evt('settings','click',e=>{if(e.target.id==='settings')closeSettings();});
+evt('logmodal','click',e=>{if(e.target.id==='logmodal')closeLog();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();closeSettings();closeLog();hideLogin();}});
+
+/* ============================================================
+   ENHEDSLAG — opgaveoverblik pr. UDD-enhed
+   Struktur: hver UDD-enhed har egne medarbejdere, teams og planer.
+   En plan hører til én delproces (kun delprocesser hvor enheden er
+   Udførende (R - UDDADM)). Alt kan læses af alle; redigering kræver
+   en bruger med rollen "enhed" for netop denne enhed.
+   Personnavne gemmes ALDRIG — kun funktioner/initialer; navne vises
+   via navnearket (samme ark som procesejere/driftsejere).
+   ============================================================ */
+let enhedOpen=null,unitDb={},unitSnap={},uDrawerSub=null,uEditBuf=null;
+let uState={view:'plan',openAreas:new Set(),openMains:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+const UNIT_STATUS=[{v:'aktiv',l:'Aktiv'},{v:'planlagt',l:'Planlagt'},{v:'inaktiv',l:'Inaktiv'}];
+const MONTHS=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+const monthToWeek=m=>Math.round((m-1)*52/12)+1;
+const capFirst=s=>s?s.charAt(0).toUpperCase()+s.slice(1):'';
+const fmtDKK=n=>new Intl.NumberFormat('da-DK',{style:'currency',currency:'DKK',maximumFractionDigits:0}).format(n);
+const fmtAAV=n=>new Intl.NumberFormat('da-DK',{maximumFractionDigits:2}).format(n)+' ÅV';
+const parseKr=v=>{if(typeof v==='number')return Math.round(v);const d=String(v==null?'':v).replace(/[^0-9]/g,'');return d?parseInt(d,10):0;};
+const parseAAV=v=>{if(typeof v==='number')return v;const n=parseFloat(String(v==null?'':v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n;};
+const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--warn)':st==='inaktiv'?'var(--over)':'var(--muted)';return `<span class="status-dot" style="background:${c}"></span>`;};
+function blankUnit(){return {members:[],teams:[],plans:{},sectionLeader:'',log:[]};}
+const curUnit=()=>unitDb[enhedOpen]||blankUnit();
+const uCanEdit=()=>canEditEnhed(enhedOpen);
+const newUid=p=>p+Date.now().toString(36)+Math.floor(Math.random()*1e4);
+/* medarbejdere: name = funktion/initialer (aldrig personnavne); visningsnavn slås op i navnearket */
+const uMember=id=>curUnit().members.find(m=>m.id===id)||{id,name:id,capacity:1,team:''};
+const umName=id=>navnOpslag[id]||uMember(id).name;
+const umRawName=id=>uMember(id).name;
+const uTeamById=id=>curUnit().teams.find(t=>t.id===id);
+const uTeamName=id=>{const t=uTeamById(id);return t?t.name:'';};
+const TCOL=['#8A1C24','#2F6F8F','#4F7A4A','#C2891A','#7A5A8F','#B5623A','#3E6C6C','#8F5B5B'];
+const uTeamColor=id=>{const i=curUnit().teams.findIndex(t=>t.id===id);return i>=0?TCOL[i%TCOL.length]:'var(--faint)';};
+/* delprocesser hvor enheden er Udførende (R - UDDADM) — kun dem kan enheden planlægge på */
+const uSubs=uid=>db.subs.filter(s=>roleIds(s,'RU').includes(uid));
+function blankPlan(sid){return {sub:sid,status:'aktiv',team:'',weeks:{},weekNotes:{},raci:{A:[],R:[],C:[],I:[]},resources:[],formaal:'',beskrivelse:'',mandat:'',budget:0,budgetNote:'',note:''};}
+const uPlanOr=sid=>curUnit().plans[sid]||null;
+const uPlan=sid=>uPlanOr(sid)||blankPlan(sid);
+function normPlan(p){if(!p.raci)p.raci={};['A','R','C','I'].forEach(k=>{if(!Array.isArray(p.raci[k]))p.raci[k]=[];});if(!Array.isArray(p.resources))p.resources=[];if(!p.weeks)p.weeks={};if(!p.weekNotes)p.weekNotes={};return p;}
+const uInvolved=p=>[...new Set([...(p.raci.A||[]),...(p.raci.R||[]),...(p.raci.C||[]),...(p.raci.I||[])])];
+const uPlanAAV=p=>(p.resources||[]).reduce((a,r)=>a+(+r.h||0),0);
+
+/* ---------- uge-værktøjer (portet fra opgaveoverblikket) ---------- */
+function weekStats(weeks){const ks=Object.keys(weeks||{}).map(Number).filter(k=>weeks[k]>0);return {active:ks.length,peak:ks.filter(k=>weeks[k]===3).length,elev:ks.filter(k=>weeks[k]===2).length};}
+function weeksStr(weeks){let s='';for(let w=1;w<=52;w++)s+=String((weeks&&weeks[w])||0);return s;}
+function parseWeeksStr(str){const w={};if(str==null)return w;const t=String(str).replace(/[^0-3]/g,'');for(let i=0;i<52&&i<t.length;i++){const v=+t[i];if(v>0)w[i+1]=v;}return w;}
+function weekMini(weeks,notes){let c='';for(let w=1;w<=52;w++){const lv=(weeks&&weeks[w])||0;const nt=(notes&&notes[w])||'';c+=`<i class="wm lv${lv}" title="Uge ${w}${nt?' · '+esc(nt):''}"></i>`;}return `<div class="wkmini">${c}</div>`;}
+function weekGridHTML(weeks,notes,cb){
+  const seg=(w0,w1,lab)=>{let c='';for(let w=w0;w<=w1;w++){const lv=(weeks&&weeks[w])||0;const nt=(notes&&notes[w])||'';c+=`<button type="button" class="wkc lv${lv}" onclick="${cb(w)}" title="Uge ${w}${nt?' · '+esc(nt):''}">${w}</button>`;}return `<div class="wkseg"><span class="wkseg-l">${lab}</span><div class="wkrow">${c}</div></div>`;};
+  return `<div class="wkgrid">${seg(1,30,'Forår · uge 1–30')}${seg(31,52,'Efterår · uge 31–52')}<div class="wklegend"><span><i class="wm lv1"></i>Normal</span><span><i class="wm lv2"></i>Forhøjet</span><span><i class="wm lv3"></i>Peak</span><span><i class="wm lv0"></i>Kører ikke</span></div></div>`;
+}
+function weekNotesHTML(notes){
+  const keys=Object.keys(notes||{}).map(Number).sort((a,b)=>a-b);
+  const rows=keys.map(w=>`<div class="wknrow"><span class="wknw">Uge ${w}</span><input value="${esc(notes[w]||'')}" placeholder="Note for uge ${w}…" oninput="uWeekNoteSet(${w},this.value)"><button class="iconbtn" onclick="uWeekNoteRemove(${w})" title="Fjern note">×</button></div>`).join('');
+  let opts='<option value="">+ Tilføj note til uge…</option>';
+  for(let w=1;w<=52;w++)if(notes[w]==null)opts+=`<option value="${w}">Uge ${w}</option>`;
+  return `<div class="wknotes"><div class="wkseg-l">Ugenoter — vises når musen holdes over ugen</div>${rows}<select class="wknadd" onchange="uWeekNoteAdd(+this.value);this.value=''">${opts}</select></div>`;
+}
+function uWeekNoteAdd(w){if(!w||!uEditBuf)return;uEditBuf.weekNotes=uEditBuf.weekNotes||{};if(uEditBuf.weekNotes[w]==null)uEditBuf.weekNotes[w]='';uRenderWeekEdit();}
+function uWeekNoteSet(w,text){if(!uEditBuf)return;uEditBuf.weekNotes[w]=text;}
+function uWeekNoteRemove(w){if(!uEditBuf)return;delete uEditBuf.weekNotes[w];uRenderWeekEdit();}
+function uWeekCycle(w){if(!uEditBuf)return;uEditBuf.weeks=uEditBuf.weeks||{};const lv=uEditBuf.weeks[w]||0,nx=(lv+1)%4;if(nx===0)delete uEditBuf.weeks[w];else uEditBuf.weeks[w]=nx;uRenderWeekEdit();}
+
+/* ---------- persistens for enhedsdata ---------- */
+function unitRows(uid){
+  const u=unitDb[uid];
+  return {
+    unit_members:u.members.map((m,i)=>({id:m.id,enhed:uid,name:m.name,team:m.team||null,capacity:m.capacity==null?1:+m.capacity,pos:i})),
+    unit_teams:u.teams.map((t,i)=>({id:t.id,enhed:uid,name:t.name,pos:i})),
+    unit_plans:Object.values(u.plans).map(p=>({id:uid+'|'+p.sub,enhed:uid,sub_id:p.sub,status:p.status||null,team:p.team||null,weeks:p.weeks||{},week_notes:p.weekNotes||{},raci:p.raci||{},resources:p.resources||[],formaal:p.formaal||null,beskrivelse:p.beskrivelse||null,mandat:p.mandat||null,budget:+p.budget||0,budget_note:p.budgetNote||null,note:p.note||null})),
+    unit_settings:[{id:uid,enhed:uid,section_leader:u.sectionLeader||null}],
+    unit_log:u.log.map(e=>({id:e.id,enhed:uid,t:e.t,who:e.who||null,msg:e.msg}))
+  };
+}
+async function loadUnit(uid,force){
+  if(unitDb[uid]&&!force)return;
+  const u=blankUnit();
+  if(sb){
+    try{
+      const q=(t,ord)=>{let x=sb.from(t).select('*').eq('enhed',uid);return ord?x.order(ord,{ascending:true}):x;};
+      const res=await Promise.all([q('unit_members','pos'),q('unit_teams','pos'),q('unit_plans'),q('unit_settings'),q('unit_log','t')]);
+      for(const r of res)if(r.error)throw r.error;
+      const [me,te,pl,se,lo]=res.map(r=>r.data||[]);
+      u.members=me.map(x=>({id:x.id,name:x.name,team:x.team||'',capacity:x.capacity==null?1:+x.capacity}));
+      u.teams=te.map(x=>({id:x.id,name:x.name}));
+      pl.forEach(x=>{u.plans[x.sub_id]=normPlan({sub:x.sub_id,status:x.status||'aktiv',team:x.team||'',weeks:x.weeks||{},weekNotes:x.week_notes||{},raci:x.raci||{},resources:x.resources||[],formaal:x.formaal||'',beskrivelse:x.beskrivelse||'',mandat:x.mandat||'',budget:+x.budget||0,budgetNote:x.budget_note||'',note:x.note||''});});
+      if(se[0])u.sectionLeader=se[0].section_leader||'';
+      u.log=lo.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}));
+    }catch(e){console.warn('Kunne ikke hente enhedsdata:',e);}
+  }
+  unitDb[uid]=u;
+  unitSnap[uid]=keyAll(unitRows(uid));
+}
+let uSaveSeq=0;
+async function saveUnit(uid){
+  uid=uid||enhedOpen;
+  if(!uid||!canEditEnhed(uid))return;
+  const my=++uSaveSeq;
+  setSaveStatus('saving');
+  if(!sb){if(my===uSaveSeq)setSaveStatus('error');return;}
+  try{
+    unitSnap[uid]=await syncTables(unitRows(uid),unitSnap[uid],'enhed',uid);
+    if(my===uSaveSeq)setSaveStatus('saved');
+  }catch(e){
+    console.warn('Kunne ikke gemme enhedsdata:',e);
+    if(my===uSaveSeq)setSaveStatus('error');
+  }
+}
+const ULOG_MAX=300;
+function uLog(msg){
+  const u=curUnit();
+  u.log.push({id:newUid('ulg'),t:new Date().toISOString(),who:whoAmI(),msg:String(msg||'')});
+  if(u.log.length>ULOG_MAX)u.log=u.log.slice(-ULOG_MAX);
+}
+
+/* ---------- åbn/luk enhedens side ---------- */
+async function openEnhed(uid){
+  if(regOf(uid)!=='unitsUdd')return;
+  closeDrawer();closeSettings();closeLog();
+  enhedOpen=uid;
+  uState={view:'plan',openAreas:new Set(),openMains:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+  const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
+  if(tb)tb.style.display='none';if(seg)seg.style.display='none';
+  $('view').innerHTML='<div class="empty-state"><b>Henter enhedens data …</b></div>';
+  await loadUnit(uid);
+  render();
+}
+function closeEnhed(){
+  enhedOpen=null;uDrawerSub=null;uEditBuf=null;
+  const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
+  if(tb)tb.style.display='';if(seg)seg.style.display='';
+  render();
+}
+function uSetView(v){uState.view=v;render();}
+
+/* ---------- enhedens side ---------- */
+function renderEnhedPage(){
+  const uid=enhedOpen,u=curUnit();
+  const subs=uSubs(uid);
+  const f=uState.filters;
+  const kpiAAV=subs.reduce((a,s)=>{const p=uPlanOr(s.id);return a+(p?uPlanAAV(p):0);},0);
+  const kpiCap=u.members.reduce((a,m)=>a+(+m.capacity||0),0);
+  const kpiAktiv=subs.filter(s=>{const p=uPlanOr(s.id);return p&&p.status==='aktiv';}).length;
+  const segBtn=(v,label)=>`<button role="tab" aria-selected="${uState.view===v}" onclick="uSetView('${v}')">${label}</button>`;
+  let h=`<div class="uhead">
+    <div>
+      <div class="ueyebrow">Enhed i UDD · Opgaveoverblik</div>
+      <h2>${esc(anyName(uid))}</h2>
+      <div class="usub">${u.sectionLeader?`Sektionsleder · <b>${esc(u.sectionLeader)}</b> · `:''}${plural(subs.length,'delproces','delprocesser')} hvor enheden er udførende (R)</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn" onclick="closeEnhed()">← Tilbage til landskabet</button>
+      <div class="seg" role="tablist" aria-label="Enhedsvisning">${segBtn('plan','Delprocesser')}${segBtn('people','Medarbejdere')}${segBtn('tl','Tidslinje')}</div>
+    </div>
+  </div>
+  <div class="ubar">
+    <span class="lab" style="font-size:12px;color:var(--faint);font-weight:500">Filtrér:</span>
+    <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
+    <select onchange="uState.filters.status=this.value;render()"><option value="">Alle statusser</option>${UNIT_STATUS.map(s=>opt(s.v,s.l,f.status)).join('')}</select>
+    <span class="spacer"></span>
+    ${uCanEdit()?`<button class="btn" onclick="uOpenSettings()">Struktur & personer</button>`:''}
+    <button class="btn" onclick="uExportXLSX()">Eksportér Excel</button>
+    ${uCanEdit()?`<button class="btn" onclick="$('u-import-xlsx').click()">Importér Excel</button>`:''}
+    <button class="btn" onclick="uOpenLog()">Seneste ændringer</button>
+    <input type="file" id="u-import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="if(this.files[0])uImportXLSX(this.files[0]);this.value=''">
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">${kpiAktiv}<span style="color:var(--faint);font-weight:400"> / </span>${subs.length}</div><div class="l">Aktive / delprocesser</div></div>
+    <div class="kpi"><div class="v">${u.members.length}</div><div class="l">Medarbejdere</div></div>
+    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}</div><div class="l">Planlagt ÅV</div></div>
+    <div class="kpi"><div class="v">${fmtAAV(kpiCap)}</div><div class="l">Kapacitet</div></div>
+  </div>`;
+  h+=uState.view==='people'?uRenderPeople():uState.view==='tl'?uRenderTl():uRenderPlanList();
+  $('view').innerHTML=h;
+}
+function uMatch(s){
+  const p=uPlanOr(s.id),f=uState.filters;
+  if(f.team&&(!p||p.team!==f.team))return false;
+  if(f.status&&(!p||p.status!==f.status))return false;
+  return true;
+}
+function uToggleArea(id){uState.openAreas.has(id)?uState.openAreas.delete(id):uState.openAreas.add(id);render();}
+function uToggleMain(id){uState.openMains.has(id)?uState.openMains.delete(id):uState.openMains.add(id);render();}
+function uAvatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`;show.forEach(id=>s+=`<span class="avatar" title="${esc(umName(id))}">${initials(umName(id))}</span>`);if(ids.length>4)s+=`<span class="avatar more">+${ids.length-4}</span>`;return s+`</div>`;}
+function uRenderPlanList(){
+  const uid=enhedOpen,subs=uSubs(uid).filter(uMatch);
+  if(!uSubs(uid).length)return `<div class="empty-state"><b>Ingen delprocesser endnu</b>Enheden vises her, når den er sat på som <em>Udførende (R - UDDADM)</em> på delprocesser i landskabet.</div>`;
+  if(!subs.length)return `<div class="empty-state"><b>Ingen delprocesser matcher filtrene</b>Justér team- eller statusfilteret.</div>`;
+  const anyF=uState.filters.team||uState.filters.status;
+  const subIds=new Set(subs.map(s=>s.id));
+  const mainsShown=db.mains.filter(m=>subsOfMain(m.id).some(s=>subIds.has(s.id)));
+  const areasShown=db.areas.filter(a=>mainsShown.some(m=>m.area===a.id));
+  const colhead=`<div class="ucolhead"><div></div><div>Delproces</div><div class="c-uwk">Tidslinje</div><div>Personer</div><div class="num c-uaav">ÅV</div><div class="num c-ubud">Budget</div><div></div></div>`;
+  const row=s=>{
+    const p=uPlanOr(s.id),inv=p?uInvolved(p):[];
+    const aav=p?uPlanAAV(p):0;
+    const small=p?`${statusDot(p.status)}${capFirst(p.status)}${p.team&&uTeamName(p.team)?' · '+esc(uTeamName(p.team)):''}`:'<span class="emptyhint">Ingen plan endnu</span>';
+    return `<div class="uoprow" onclick="uOpenDrawer('${jsq(s.id)}')">
+      <div class="movecol"></div>
+      <div class="opname">${esc(s.title)}<small>${small}</small></div>
+      <div class="c-uwk">${p&&weekStats(p.weeks).active?weekMini(p.weeks,p.weekNotes):'<span class="emptyhint">—</span>'}</div>
+      <div>${inv.length?uAvatarStack(inv):'<span class="emptyhint">—</span>'}</div>
+      <div class="num c-uaav">${aav?aav.toLocaleString('da-DK',{maximumFractionDigits:2}):'<span class="emptyhint">—</span>'}</div>
+      <div class="num c-ubud">${p&&p.budget?fmtDKK(p.budget):'<span class="emptyhint">—</span>'}</div>
+      ${ARROW_R}</div>`;
+  };
+  let h='';
+  areasShown.forEach(a=>{
+    const mns=mainsShown.filter(m=>m.area===a.id);
+    const aSubs=mns.flatMap(m=>subsOfMain(m.id).filter(s=>subIds.has(s.id)));
+    const aAAV=aSubs.reduce((x,s)=>{const p=uPlanOr(s.id);return x+(p?uPlanAAV(p):0);},0);
+    const inner=mns.map(m=>{
+      const ms=subsOfMain(m.id).filter(s=>subIds.has(s.id));
+      const mAAV=ms.reduce((x,s)=>{const p=uPlanOr(s.id);return x+(p?uPlanAAV(p):0);},0);
+      return mainCard(anyF||uState.openMains.has(m.id),`uToggleMain('${jsq(m.id)}')`,m.title,`${plural(ms.length,'delproces','delprocesser')}${mAAV?' · '+fmtAAV(mAAV):''}`,colhead,ms.map(row).join(''));
+    }).join('');
+    h+=branch(anyF||uState.openAreas.has(a.id),`uToggleArea('${jsq(a.id)}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
+  });
+  return h;
+}
+
+/* ---------- medarbejdervisning ---------- */
+function uPersonPlans(pid){return uSubs(enhedOpen).filter(s=>{const p=uPlanOr(s.id);return p&&(uInvolved(p).includes(pid)||(p.resources||[]).some(r=>r.e===pid));});}
+function uRaciRole(p,id){if(p.raci.A.includes(id))return 'A';if(p.raci.R.includes(id))return 'R';if(p.raci.C.includes(id))return 'C';if(p.raci.I.includes(id))return 'I';return '';}
+function uRaciTag(p,id){const r=uRaciRole(p,id);const lab={A:'Ansvarlig',R:'Udførende',C:'Konsulteres',I:'Informeres'}[r]||'';return r?`<span class="racitag raci-${r}" title="${lab}">${r}</span>`:'';}
+function uRenderPeople(){
+  const u=curUnit();
+  const rows=u.members.map(p=>{
+    const mine=uPersonPlans(p.id).filter(uMatch);
+    const asA=mine.filter(s=>uPlan(s.id).raci.A.includes(p.id)).length;
+    const load=mine.reduce((a,s)=>a+(+((uPlan(s.id).resources.find(r=>r.e===p.id)||{}).h)||0),0);
+    return {p,mine,asA,load};
+  }).filter(r=>r.mine.length);
+  if(!rows.length)return `<div class="empty-state"><b>Ingen medarbejdere er sat på endnu</b>Åbn en delproces og sæt medarbejdere på under <em>Medarbejdere — rolle og ÅV</em>. Så vises fordelingen her.</div>`;
+  const bySort=(a,b)=>b.load-a.load||b.mine.length-a.mine.length;
+  const groups=[];
+  u.teams.forEach(t=>{const g=rows.filter(r=>r.p.team===t.id).sort(bySort);if(g.length)groups.push({name:t.name,color:uTeamColor(t.id),rows:g});});
+  const none=rows.filter(r=>!r.p.team||!uTeamById(r.p.team)).sort(bySort);
+  if(none.length)groups.push({name:'Uden team',color:'var(--faint)',rows:none});
+  const card=({p,mine,asA,load})=>{
+    const pct=load&&p.capacity?Math.round(load/p.capacity*100):0;
+    const col=pct>100?'var(--over)':pct>=85?'var(--warn)':'var(--ok)';
+    let c=`<div class="pcard"><div class="ptop">
+      <span class="avatar lg">${initials(umName(p.id))}</span>
+      <div><div class="pname">${esc(umName(p.id))}</div></div>
+      ${load?`<div class="util"><div class="lab"><b style="color:${col}">${pct}%</b> af ${fmtAAV(p.capacity)} · ${fmtAAV(load)}</div><div class="bar"><i style="width:${Math.min(pct,100)}%;background:${col}"></i></div></div>`
+            :`<div class="pcounts"><div class="pc"><div class="n">${mine.length}</div><div class="k">delprocesser</div></div><div class="pc"><div class="n">${asA}</div><div class="k">ansvarlig</div></div></div>`}
+      </div><div class="ptags">`;
+    [...mine].sort((a,b)=>((uPlan(b.id).resources.find(r=>r.e===p.id)||{}).h||0)-((uPlan(a.id).resources.find(r=>r.e===p.id)||{}).h||0)).forEach(s=>{
+      const pl=uPlan(s.id),ah=(pl.resources.find(r=>r.e===p.id)||{}).h||0;
+      c+=`<span class="ptaska" onclick="uOpenDrawer('${jsq(s.id)}')">${uRaciTag(pl,p.id)}${ah?`<span class="ptaav">${fmtAAV(ah)}</span>`:''}${esc(s.title)}</span>`;});
+    return c+`</div></div>`;
+  };
+  let h='';
+  groups.forEach(g=>{
+    const tLoad=g.rows.reduce((a,r)=>a+r.load,0);
+    h+=`<div class="team-h"><span class="team-dot" style="background:${g.color}"></span>${esc(g.name)}<span class="team-sub">· ${g.rows.length} ${g.rows.length===1?'medarbejder':'medarbejdere'}${tLoad?' · '+fmtAAV(tLoad):''}</span></div>`;
+    h+=`<div class="people">`+g.rows.map(card).join('')+`</div>`;
+  });
+  return h;
+}
+
+/* ---------- tidslinjevisning ---------- */
+function uRenderTl(){
+  const uid=enhedOpen,u=curUnit();
+  const mapSub=s=>{const p=uPlan(s.id);return {id:s.id,title:s.title,weeks:p.weeks||{},notes:p.weekNotes||{},color:(p.team&&uTeamById(p.team))?uTeamColor(p.team):areaColor(areaOfSub(s))};};
+  const _now=new Date(),_s=new Date(_now.getFullYear(),0,1),nowWeek=Math.min(52,Math.max(1,Math.ceil((((_now-_s)/86400000)+1)/7)));
+  const groups=[];
+  const selPeople=u.members.filter(p=>uState.tlPeople.has(p.id));
+  const covered=new Set();
+  selPeople.forEach(p=>{
+    const subs=uPersonPlans(p.id);subs.forEach(s=>covered.add(s.id));
+    groups.push({label:umName(p.id),items:subs.map(mapSub)});
+  });
+  const manual=uSubs(uid).filter(s=>uState.tlSel.has(s.id)&&!covered.has(s.id));
+  if(manual.length){
+    const manualIds=new Set(manual.map(s=>s.id));
+    db.areas.forEach(a=>{db.mains.filter(m=>m.area===a.id).forEach(m=>{
+      const subs=manual.filter(s=>s.main===m.id);
+      if(subs.length)groups.push({label:m.title,items:subs.map(mapSub)});
+    });});
+    const orphans=manual.filter(s=>!db.mains.some(m=>m.id===s.main));
+    if(orphans.length)groups.push({label:'Uden hovedproces',items:orphans.map(mapSub)});
+  }
+  const tot=covered.size+manual.length;
+  const subParts=[];
+  if(selPeople.length)subParts.push(`${selPeople.length} ${selPeople.length===1?'medarbejder':'medarbejdere'}`);
+  if(tot)subParts.push(plural(tot,'delproces','delprocesser'));
+  let h=`<div class="tl">
+    <div class="tl-toolbar"><div class="tl-tt">Tidslinje${subParts.length?`<span class="tl-sub">${subParts.join(' · ')}</span>`:''}</div>
+    <div class="tl-btns"><button class="btn" onclick="uState.tlPanel=!uState.tlPanel;render()">${uState.tlPanel?'Skjul valg':'Vælg delprocesser og medarbejdere'}</button></div></div>`;
+  if(uState.tlPanel)h+=uTlPanel();
+  const COLS=Math.max(30,52-31+1);
+  h+=uTlChart('Forår',1,30,groups,nowWeek,COLS);
+  h+=uTlChart('Efterår',31,52,groups,nowWeek,COLS);
+  return h+`</div>`;
+}
+function uTlChart(title,w0,w1,groups,nowWeek,cols){
+  const n=w1-w0+1;cols=cols||n;
+  let axis='';for(let m=1;m<=12;m++){const ws=monthToWeek(m);if(ws>=w0&&ws<=w1)axis+=`<span class="tlw-m" style="grid-column:${ws-w0+1}">${capFirst(MONTHS[m-1])}</span>`;}
+  let body='';
+  groups.forEach(g=>{
+    let rows='';
+    g.items.forEach(it=>{
+      let cells='';
+      for(let w=w0;w<=w1;w++){const lv=(it.weeks&&it.weeks[w])||0;const nt=(it.notes&&it.notes[w])||'';cells+=`<div class="wkc lv${lv}${w===nowWeek?' now':''}" title="Uge ${w}${nt?' · '+esc(nt):''}"></div>`;}
+      rows+=`<div class="tl-row2"><div class="tl-label" onclick="uOpenDrawer('${jsq(it.id)}')" title="${esc(it.title)}"><span class="dot" style="background:${it.color}"></span>${esc(it.title)}</div><div class="tlw" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div></div>`;
+    });
+    if(rows)body+=`<div class="tl-grp">${esc(g.label)}</div>`+rows;
+  });
+  if(!body)body=`<div class="tl-empty">Intet valgt — brug knappen ovenfor til at vælge delprocesser eller medarbejdere.</div>`;
+  return `<div class="tl-chart"><div class="tl-chart-h">${title}</div><div class="tl-row2 tl-axisrow"><div class="tl-label"></div><div class="tlw tlw-axis" style="grid-template-columns:repeat(${cols},1fr)">${axis}</div></div><div class="tl-rows">${body}</div></div>`;
+}
+function uTlPanel(){
+  const uid=enhedOpen,u=curUnit(),subs=uSubs(uid);
+  if(!subs.length)return `<div class="tl-panel"><div class="tl-panel-note">Der er ingen delprocesser endnu, hvor enheden er udførende (R).</div></div>`;
+  let h=`<div class="tl-panel">`;
+  const empChk=p=>{const on=uState.tlPeople.has(p.id);return `<label class="tl-chk${on?' on':''}"><input type="checkbox" ${on?'checked':''} onchange="uTlPersonToggle('${jsq(p.id)}')"><span>${esc(umName(p.id))}<i class="tl-chk-n">${uPersonPlans(p.id).length}</i></span></label>`;};
+  const teamBlock=(tid,name,ps)=>{const allOn=ps.every(p=>uState.tlPeople.has(p.id));return `<div class="tl-area"><div class="tl-area-h"><span class="dot" style="background:${tid?uTeamColor(tid):'var(--faint)'}"></span>${esc(name)}<button class="tl-all" onclick="uTlTeamToggle('${tid||'__none'}',${allOn?'false':'true'})">${allOn?'Fjern alle':'Vælg alle'}</button></div><div class="tl-pg"><div class="tl-pg-items">${ps.map(empChk).join('')}</div></div></div>`;};
+  let pc='';
+  u.teams.forEach(t=>{const ps=u.members.filter(p=>p.team===t.id&&uPersonPlans(p.id).length);if(ps.length)pc+=teamBlock(t.id,t.name,ps);});
+  const noteam=u.members.filter(p=>(!p.team||!uTeamById(p.team))&&uPersonPlans(p.id).length);
+  if(noteam.length)pc+=teamBlock(null,'Uden team',noteam);
+  if(pc){const anyOn=uState.tlPeople.size||uState.tlSel.size;h+=`<div class="tl-people"><div class="tl-people-h"><span class="tl-ptitle">Medarbejdere</span>${anyOn?`<button class="tl-all" onclick="uState.tlPeople=new Set();uState.tlSel=new Set();render()">Ryd alt</button>`:''}</div>${pc}</div>`;}
+  const chk=s=>{const on=uState.tlSel.has(s.id);return `<label class="tl-chk${on?' on':''}"><input type="checkbox" ${on?'checked':''} onchange="uTlToggle('${jsq(s.id)}')"><span>${esc(s.title)}</span></label>`;};
+  h+=`<div class="tl-opg-h"><span class="tl-ptitle">Delprocesser</span></div>`;
+  const subIds=new Set(subs.map(s=>s.id));
+  db.areas.forEach(a=>{
+    const mains=db.mains.filter(m=>m.area===a.id);
+    const areaSubs=subs.filter(s=>mains.some(m=>m.id===s.main));
+    if(!areaSubs.length)return;
+    const allOn=areaSubs.every(s=>uState.tlSel.has(s.id));
+    const mainBlock=m=>{const ms=subs.filter(s=>s.main===m.id);if(!ms.length)return '';const mOn=ms.every(s=>uState.tlSel.has(s.id));
+      return `<div class="tl-pg"><div class="tl-pg-h tl-main-h">${esc(m.title)}<button class="tl-all" onclick="uTlSubsToggle('${jsq(m.id)}','main',${mOn?'false':'true'})">${mOn?'Fjern':'Vælg'}</button></div><div class="tl-pg-items">${ms.map(chk).join('')}</div></div>`;};
+    h+=`<div class="tl-area"><div class="tl-area-h"><span class="dot" style="background:${areaColor(a.id)}"></span>${esc(a.name)}<button class="tl-all" onclick="uTlSubsToggle('${jsq(a.id)}','area',${allOn?'false':'true'})">${allOn?'Fjern alle':'Vælg alle'}</button></div>${mains.map(mainBlock).join('')}</div>`;
+  });
+  return h+`</div>`;
+}
+function uTlToggle(id){uState.tlSel.has(id)?uState.tlSel.delete(id):uState.tlSel.add(id);render();}
+function uTlPersonToggle(id){uState.tlPeople.has(id)?uState.tlPeople.delete(id):uState.tlPeople.add(id);render();}
+function uTlTeamToggle(tid,on){const u=curUnit();const list=(tid==='__none'?u.members.filter(p=>!p.team||!uTeamById(p.team)):u.members.filter(p=>p.team===tid)).filter(p=>uPersonPlans(p.id).length);list.forEach(p=>{on?uState.tlPeople.add(p.id):uState.tlPeople.delete(p.id);});render();}
+function uTlSubsToggle(id,kind,on){
+  const subs=uSubs(enhedOpen).filter(s=>kind==='main'?s.main===id:areaOfSub(s)===id);
+  subs.forEach(s=>{on?uState.tlSel.add(s.id):uState.tlSel.delete(s.id);});render();
+}
+
+/* ---------- drawer: enhedens plan for en delproces ---------- */
+function uOpenDrawer(sid){uDrawerSub=sid;uEditBuf=null;uRenderDrawerView();openScrim();}
+function uCloseDrawer(){setScrim(false);uDrawerSub=null;uEditBuf=null;}
+const uNotSet='<span class="v empty">Ikke udfyldt endnu.</span>';
+function uRenderDrawerView(){
+  const s=db.subs.find(x=>x.id===uDrawerSub);if(!s)return uCloseDrawer();
+  const m=mainById(s.main),oid=m.area,col=areaColor(oid);
+  const p=uPlanOr(s.id),hasPlan=!!p,pl=p||blankPlan(s.id);
+  const inv=uInvolved(pl),th=uPlanAAV(pl);
+  const emptyV=v=>v?esc(v):uNotSet;
+  const racLine=(key,label,ids)=>!ids.length?'':`<div class="raci-line"><div class="rl-key"><b>${key}</b>${label}</div><div class="rl-people">${ids.map(id=>`<span class="pill"><span class="avatar" style="width:18px;height:18px;font-size:9px">${initials(umName(id))}</span>${esc(umName(id))}</span>`).join('')}</div></div>`;
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="uCloseDrawer()" aria-label="Luk">×</button>
+      <div class="crumb" style="color:${col}">${esc(anyName(enhedOpen))} · ${esc(area(oid).name)} · ${esc(m.title)}</div>
+      <h2>${esc(s.title)}</h2>
+      <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
+        ${hasPlan?`<span class="pill">${statusDot(pl.status)}${capFirst(pl.status)}</span>`:'<span class="pill">Ingen plan endnu</span>'}
+        ${hasPlan?`<span class="pill">${(()=>{const st=weekStats(pl.weeks);return st.active?st.active+' uger'+(st.peak?' · '+st.peak+' peak':''):'Ingen uger';})()}</span>`:''}
+        ${hasPlan&&pl.team&&uTeamName(pl.team)?`<span class="pill">${esc(uTeamName(pl.team))}</span>`:''}
+        ${hasPlan&&pl.budget?`<span class="pill">${fmtDKK(pl.budget)}</span>`:''}
+      </div>
+      ${uCanEdit()?`<div class="dr-actions">
+        <button class="btn primary" onclick="uStartEdit()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${hasPlan?'Rediger':'Opret plan'}</button>
+        ${hasPlan?`<button class="btn danger" onclick="uDeletePlan()">Nulstil plan</button>`:''}
+      </div>`:''}
+    </div>
+    <div class="dr-body">
+      ${hasPlan?`
+      <div class="field"><div class="k">Formål</div><div class="v">${emptyV(pl.formaal)}</div></div>
+      <div class="field"><div class="k">Beskrivelse</div><div class="v">${emptyV(pl.beskrivelse)}</div></div>
+      <div class="field"><div class="k">Mandat</div><div class="v">${emptyV(pl.mandat)}</div></div>
+      <div class="field"><div class="k">Medarbejdere (RACI)</div>${inv.length?`<div class="raci-grid">${racLine('A','Overordnet ansvarlig',pl.raci.A)}${racLine('R','Udførende',pl.raci.R)}${racLine('C','Konsulteres',pl.raci.C)}${racLine('I','Informeres',pl.raci.I)}</div>`:'<span class="v empty">Ingen medarbejdere tilknyttet endnu.</span>'}</div>
+      <div class="field"><div class="k">Ressourceforbrug pr. medarbejder (ÅV)${th?' · i alt '+fmtAAV(th):''}</div>${pl.resources.length?pl.resources.map(r=>{const mx=Math.max(...pl.resources.map(x=>+x.h||0))||1;return `<div style="display:flex;align-items:center;gap:11px;padding:6px 0"><div style="width:150px;font-size:13px">${esc(umName(r.e))}</div><div style="flex:1;height:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round((+r.h||0)/mx*100)}%;background:${col}"></i></div><div style="width:60px;text-align:right;font-size:12.5px;color:var(--muted)">${fmtAAV(+r.h||0)}</div></div>`;}).join(''):'<span class="v empty">ÅV ikke angivet endnu.</span>'}</div>
+      <div class="field"><div class="k">Budget</div><div class="budgetbox"><div class="amt">${pl.budget?fmtDKK(pl.budget):'Ingen særskilt post'}</div>${pl.budgetNote?`<div class="bn">${esc(pl.budgetNote)}</div>`:''}</div></div>
+      <div class="field"><div class="k">Tidslinje${(()=>{const st=weekStats(pl.weeks);return st.active?' · '+st.active+' aktive'+(st.elev?', '+st.elev+' forhøjet':'')+(st.peak?', '+st.peak+' peak':''):'';})()}</div>${weekStats(pl.weeks).active?`${weekMini(pl.weeks,pl.weekNotes)}<div class="wklegend" style="margin-top:7px"><span><i class="wm lv1"></i>Normal</span><span><i class="wm lv2"></i>Forhøjet</span><span><i class="wm lv3"></i>Peak</span></div>`:'<span class="v empty">Ingen uger sat.</span>'}</div>
+      ${pl.note?`<div class="field"><div class="k">Bemærkninger</div><div class="v">${esc(pl.note)}</div></div>`:''}`
+      :`<div class="field"><div class="v empty">Enheden har endnu ingen planlægningsdata på denne delproces.${uCanEdit()?' Tryk <b>Opret plan</b> for at angive status, team, uger, ÅV m.m.':''}</div></div>`}
+    </div>`;
+}
+function uStartEdit(){
+  if(!uCanEdit())return uNoRights();
+  uEditBuf=normPlan(clone(uPlanOr(uDrawerSub)||blankPlan(uDrawerSub)));
+  uRenderDrawerEdit();
+}
+function uRenderDrawerEdit(){
+  const s=db.subs.find(x=>x.id===uDrawerSub);if(!s)return uCloseDrawer();
+  const p=uEditBuf,u=curUnit(),isNew=!uPlanOr(s.id);
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="uCancelEdit()" aria-label="Luk">×</button>
+      <div class="crumb" style="color:var(--wine)">${isNew?'Opretter plan':'Redigerer plan'} · ${esc(anyName(enhedOpen))}</div>
+      <h2>${esc(s.title)}</h2>
+      <div class="dr-actions">
+        <button class="btn primary" onclick="uSavePlan()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Gem</button>
+        <button class="btn" onclick="uCancelEdit()">Annullér</button>
+        ${isNew?'':'<button class="btn danger" onclick="uDeletePlan()">Nulstil plan</button>'}
+      </div>
+    </div>
+    <div class="dr-body frm">
+      <div class="two">
+        <div><label>Status</label><select onchange="uEditBuf.status=this.value">${UNIT_STATUS.map(x=>opt(x.v,x.l,p.status)).join('')}</select></div>
+        <div><label>Team</label><select onchange="uEditBuf.team=this.value"><option value=""${!p.team?' selected':''}>Intet team</option>${u.teams.map(t=>opt(t.id,t.name,p.team)).join('')}</select></div>
+      </div>
+      <div class="two">
+        <div><label>Budget (kr.)</label><input type="number" value="${+p.budget||0}" oninput="uEditBuf.budget=+this.value||0"></div>
+        <div></div>
+      </div>
+      <label>Formål</label><textarea oninput="uEditBuf.formaal=this.value">${esc(p.formaal)}</textarea>
+      <label>Beskrivelse</label><textarea oninput="uEditBuf.beskrivelse=this.value">${esc(p.beskrivelse)}</textarea>
+      <label>Mandat</label><textarea oninput="uEditBuf.mandat=this.value">${esc(p.mandat)}</textarea>
+      <label>Medarbejdere — rolle og ÅV</label><div id="u-people-edit"></div>
+      <label>Tidslinje</label><div id="u-week-edit"></div>
+      <label>Note til budget</label><textarea oninput="uEditBuf.budgetNote=this.value">${esc(p.budgetNote)}</textarea>
+      <label>Bemærkninger</label><textarea oninput="uEditBuf.note=this.value">${esc(p.note||'')}</textarea>
+    </div>`;
+  uRenderPeopleEdit();uRenderWeekEdit();
+}
+const U_ROLE_LABEL={A:'A — Overordnet ansvarlig',R:'R — Udførende',C:'C — Konsulteres',I:'I — Informeres'};
+function uTeamOptions(people){
+  const u=curUnit();let h='';
+  u.teams.forEach(t=>{const ps=people.filter(p=>p.team===t.id);if(ps.length)h+=`<optgroup label="${esc(t.name)}">${ps.map(p=>`<option value="${p.id}">${esc(umName(p.id))}</option>`).join('')}</optgroup>`;});
+  const none=people.filter(p=>!p.team||!uTeamById(p.team));
+  if(none.length)h+=`<optgroup label="Uden team">${none.map(p=>`<option value="${p.id}">${esc(umName(p.id))}</option>`).join('')}</optgroup>`;
+  return h;
+}
+function uRenderPeopleEdit(){
+  const ids=[...uEditBuf.raci.A,...uEditBuf.raci.R,...uEditBuf.raci.C,...uEditBuf.raci.I,...uEditBuf.resources.map(r=>r.e)];
+  const seen=new Set();const order=ids.filter(id=>{if(seen.has(id))return false;seen.add(id);return true;});
+  const roleOpt=cur=>['A','R','C','I'].map(r=>`<option value="${r}"${cur===r?' selected':''}>${U_ROLE_LABEL[r]}</option>`).join('');
+  let h='';
+  if(order.length)h+=`<div class="pplhdr"><span>Medarbejder</span><span>Rolle</span><span>ÅV</span><span></span></div>`;
+  order.forEach(id=>{const role=uPersonRole(id),aav=uPersonAAV(id);
+    h+=`<div class="pplrow">
+      <div class="pplname"><span class="avatar" style="width:20px;height:20px;font-size:9px">${initials(umName(id))}</span><span class="pnm">${esc(umName(id))}</span></div>
+      <select onchange="uPplSetRole('${jsq(id)}',this.value)">${roleOpt(role)}</select>
+      <input type="number" step="0.01" min="0" value="${aav||''}" placeholder="—" oninput="uPplSetAAV('${jsq(id)}',this.value)">
+      <button class="iconbtn" onclick="uPplRemove('${jsq(id)}')" title="Fjern">×</button>
+    </div>`;});
+  const avail=curUnit().members.filter(p=>!seen.has(p.id));
+  h+=`<select class="ppladd" onchange="uPplAdd(this.value);this.value=''"><option value="">+ Tilføj medarbejder…</option>${uTeamOptions(avail)}</select>`;
+  if(!curUnit().members.length)h+=`<div style="font-size:12px;color:var(--faint);margin-top:6px">Der er ingen medarbejdere endnu — opret dem under <b>Struktur & personer</b>.</div>`;
+  $('u-people-edit').innerHTML=h;
+}
+function uPersonRole(id){const r=uEditBuf.raci;return r.A.includes(id)?'A':r.R.includes(id)?'R':r.C.includes(id)?'C':r.I.includes(id)?'I':'';}
+function uPersonAAV(id){const r=uEditBuf.resources.find(x=>x.e===id);return r?r.h:0;}
+function uPplSetRole(id,role){['A','R','C','I'].forEach(k=>uEditBuf.raci[k]=uEditBuf.raci[k].filter(x=>x!==id));if(role)uEditBuf.raci[role].push(id);uRenderPeopleEdit();}
+function uPplSetAAV(id,val){val=parseAAV(val);const i=uEditBuf.resources.findIndex(r=>r.e===id);if(val>0){if(i>=0)uEditBuf.resources[i].h=val;else uEditBuf.resources.push({e:id,h:val});}else if(i>=0)uEditBuf.resources.splice(i,1);}
+function uPplAdd(id){if(!id)return;const inAny=['A','R','C','I'].some(k=>uEditBuf.raci[k].includes(id));if(!inAny)uEditBuf.raci.R.push(id);uRenderPeopleEdit();}
+function uPplRemove(id){['A','R','C','I'].forEach(k=>uEditBuf.raci[k]=uEditBuf.raci[k].filter(x=>x!==id));uEditBuf.resources=uEditBuf.resources.filter(r=>r.e!==id);uRenderPeopleEdit();}
+function uRenderWeekEdit(){if(!uEditBuf.weeks)uEditBuf.weeks={};if(!uEditBuf.weekNotes)uEditBuf.weekNotes={};$('u-week-edit').innerHTML=weekGridHTML(uEditBuf.weeks,uEditBuf.weekNotes,w=>`uWeekCycle(${w})`)+weekNotesHTML(uEditBuf.weekNotes);}
+function uSavePlan(){
+  if(!uCanEdit())return uNoRights();
+  const s=db.subs.find(x=>x.id===uDrawerSub);if(!s)return;
+  uEditBuf.resources=(uEditBuf.resources||[]).map(r=>({e:r.e,h:Math.max(0.01,Math.round((+r.h||0.01)*100)/100)}));
+  const u=curUnit(),isNew=!u.plans[s.id];
+  u.plans[s.id]=normPlan(clone(uEditBuf));
+  (planIndex[s.id]=planIndex[s.id]||new Set()).add(enhedOpen);
+  uLog((isNew?'Oprettede planen for delprocessen ':'Opdaterede planen for delprocessen ')+qt(s.title));
+  uEditBuf=null;
+  saveUnit();render();uRenderDrawerView();
+}
+function uCancelEdit(){uEditBuf=null;uRenderDrawerView();}
+function uDeletePlan(){
+  if(!uCanEdit())return uNoRights();
+  const s=db.subs.find(x=>x.id===uDrawerSub);if(!s)return;
+  const u=curUnit();
+  if(!u.plans[s.id]){uEditBuf=null;uRenderDrawerView();return;}
+  if(!confirm(`Nulstil enhedens plan for "${s.title}"? Status, uger, ÅV og tekster slettes for denne delproces.`))return;
+  delete u.plans[s.id];
+  if(planIndex[s.id]){planIndex[s.id].delete(enhedOpen);if(!planIndex[s.id].size)delete planIndex[s.id];}
+  uLog('Nulstillede planen for delprocessen '+qt(s.title));
+  uEditBuf=null;
+  saveUnit();render();uRenderDrawerView();
+}
+function uNoRights(){
+  if(!session)return showLogin();
+  alert('Din bruger har ikke rettigheder til at redigere denne enheds data. Kontakt administratoren.');
+}
+
+/* ---------- enhedens Struktur & personer (teams, medarbejdere, sektionsleder) ---------- */
+function uOpenSettings(){if(!uCanEdit())return uNoRights();uState.settingsTab='people';uRenderSettings();$('settings').classList.add('open');}
+function uCloseSettings(){$('settings').classList.remove('open');saveUnit();render();}
+function uRenderSettings(){
+  const u=curUnit();let body='';
+  if(uState.settingsTab==='teams'){
+    body=(u.teams.length?u.teams.map((t,i)=>{const cnt=u.members.filter(p=>p.team===t.id).length;
+      return `<div class="editline team"><input type="text" value="${esc(t.name)}" oninput="curUnit().teams[${i}].name=this.value;uScheduleSave()" placeholder="Teamnavn"><span class="em">${cnt} ${cnt===1?'medarbejder':'medarbejdere'}</span><button class="iconbtn" onclick="uRemoveTeam(${i})">×</button></div>`;}).join('')
+      :`<div style="font-size:13px;color:var(--faint);padding:6px 0">Ingen teams endnu.</div>`)
+      +`<button class="addlink" onclick="uAddTeam()">+ Tilføj team</button>`;
+  }else if(uState.settingsTab==='sektion'){
+    body=`<label style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:8px 0 6px">Sektionsleder (må gerne stå med navn i visningen — feltet gemmes som skrevet)</label>
+      <input type="text" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px;background:var(--surface)" value="${esc(u.sectionLeader)}" oninput="curUnit().sectionLeader=this.value;uScheduleSave()" placeholder="Fx sektionsleder-funktionen">`;
+  }else{
+    const topt=p=>`<option value=""${!p.team?' selected':''}>Intet team</option>`+u.teams.map(t=>opt(t.id,t.name,p.team)).join('');
+    const personRow=p=>{const i=u.members.findIndex(x=>x.id===p.id);const used=Object.values(u.plans).some(pl=>uInvolved(pl).includes(p.id)||(pl.resources||[]).some(r=>r.e===p.id));
+      return `<div class="editline person"><input type="text" value="${esc(p.name)}" oninput="curUnit().members[${i}].name=this.value;uScheduleSave()" placeholder="Funktion/initialer — IKKE navn"><select title="Team" onchange="curUnit().members[${i}].team=this.value;saveUnit();uRenderSettings();render()">${topt(p)}</select><input type="number" step="0.01" min="0" value="${p.capacity==null?1:p.capacity}" oninput="curUnit().members[${i}].capacity=+this.value||0;uScheduleSave()" title="Kapacitet i ÅV (fuldtid = 1,0)"><button class="iconbtn" ${used?'disabled title="Bruges i planer"':''} onclick="uRemovePerson(${i})">×</button></div>`;};
+    const groupHdr=(name,n)=>`<div style="font-family:Spectral;font-weight:600;font-size:14px;margin:16px 0 4px;color:var(--ink)">${esc(name)} <span style="font-weight:400;color:var(--faint);font-size:12px">· ${n}</span></div>`;
+    body='';
+    u.teams.forEach(t=>{const ppl=u.members.filter(p=>p.team===t.id);body+=groupHdr(t.name,ppl.length)+(ppl.length?ppl.map(personRow).join(''):`<div style="font-size:12.5px;color:var(--faint);padding:4px 0">Ingen medarbejdere i dette team endnu.</div>`);});
+    const none=u.members.filter(p=>!p.team||!uTeamById(p.team));
+    if(none.length)body+=groupHdr('Uden team',none.length)+none.map(personRow).join('');
+    body+=`<button class="addlink" onclick="uAddPerson()">+ Tilføj medarbejder</button>
+      <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Skriv KUN funktion eller initialer — aldrig navne. Navne vises kun, når navnearket er indlæst via landskabets <em>Data → Indlæs navne (Excel)</em>, og gemmes ikke i databasen. Medarbejderens ID (til navnearket) ses i Excel-eksporten.</div>`;
+  }
+  const tab=(id,label)=>`<button class="${uState.settingsTab===id?'on':''}" onclick="uState.settingsTab='${id}';uRenderSettings()">${label}</button>`;
+  $('settings').innerHTML=modalBox('Struktur & personer · '+esc(anyName(enhedOpen)),'uCloseSettings()',`<div class="tabbar">
+      ${tab('people',`Medarbejdere (${u.members.length})`)}${tab('teams',`Teams (${u.teams.length})`)}${tab('sektion','Sektionsleder')}
+    </div><div class="mbody">${body}</div>`);
+}
+let uSaveDebounce=null;
+function uScheduleSave(){clearTimeout(uSaveDebounce);uSaveDebounce=setTimeout(()=>{saveUnit();render();},500);}
+function uAddTeam(){curUnit().teams.push({id:newUid('ut'),name:'Nyt team'});uLog('Oprettede et team');saveUnit();uRenderSettings();}
+function uRemoveTeam(i){
+  const u=curUnit(),t=u.teams[i];if(!t)return;
+  const cnt=u.members.filter(p=>p.team===t.id).length+Object.values(u.plans).filter(p=>p.team===t.id).length;
+  if(cnt&&!confirm(`Slet "${t.name}"? ${cnt} tilknytning(er) til medarbejdere/planer bliver fjernet.`))return;
+  u.members.forEach(p=>{if(p.team===t.id)p.team='';});
+  Object.values(u.plans).forEach(p=>{if(p.team===t.id)p.team='';});
+  if(uState.filters.team===t.id)uState.filters.team='';
+  u.teams.splice(i,1);
+  uLog('Slettede teamet '+qt(t.name));
+  saveUnit();uRenderSettings();render();
+}
+function uAddPerson(){curUnit().members.push({id:newUid('um'),name:'Ny medarbejder (funktion/initialer)',capacity:1,team:''});uLog('Oprettede en medarbejder');saveUnit();uRenderSettings();}
+function uRemovePerson(i){const u=curUnit(),p=u.members[i];if(!p)return;uLog('Slettede medarbejderen '+qt(p.name));u.members.splice(i,1);saveUnit();uRenderSettings();}
+
+/* ---------- enhedens ændringslog ---------- */
+function uOpenLog(){
+  const list=[...curUnit().log].reverse();
+  const fmt=t=>{try{const d=new Date(t);return d.toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'})+' kl. '+d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});}catch(e){return t;}};
+  const rows=list.length?list.map(e=>`<div class="logline"><div class="lt">${esc(fmt(e.t))}${e.who?`<small title="${esc(e.who)}">${esc(e.who)}</small>`:''}</div><div class="lm">${esc(e.msg)}</div></div>`).join('')
+    :`<div style="font-size:13px;color:var(--faint);padding:8px 0">Ingen ændringer registreret endnu.</div>`;
+  $('logmodal').innerHTML=modalBox('Seneste ændringer · '+esc(anyName(enhedOpen)),'closeLog()',`<div class="mbody">${rows}<div style="font-size:11.5px;color:var(--faint);margin-top:12px">Viser de seneste ${ULOG_MAX} ændringer for enheden. Loggen gemmes for sig — adskilt fra landskabets log.</div></div>`);
+  $('logmodal').classList.add('open');
+}
+
+/* ---------- enhedens Excel-eksport/-import (kun egne data) ---------- */
+function uExportXLSX(){
+  if(typeof XLSX==='undefined'){alert(NO_XLSX);return;}
+  const uid=enhedOpen,u=curUnit();
+  const plans=uSubs(uid).map(s=>{
+    const p=uPlanOr(s.id);if(!p)return null;
+    const m=mainById(s.main);
+    return {'Delproces-ID':s.id,'Procesområde':area(m.area).name,'Hovedproces':m.title,'Delproces':s.title,
+      'Status':p.status||'','Team':uTeamName(p.team),'Uger (1-52)':weeksStr(p.weeks),'Ugenoter':JSON.stringify(p.weekNotes||{}),
+      'Formål':p.formaal||'','Beskrivelse':p.beskrivelse||'','Mandat':p.mandat||'',
+      'Ansvarlig (A)':(p.raci.A||[]).map(umRawName).join('; '),'Udførende (R)':(p.raci.R||[]).map(umRawName).join('; '),
+      'Konsulteret (C)':(p.raci.C||[]).map(umRawName).join('; '),'Informeret (I)':(p.raci.I||[]).map(umRawName).join('; '),
+      'Ressourcer ÅV':(p.resources||[]).map(r=>umRawName(r.e)+': '+String(r.h).replace('.',',')).join('; '),
+      'Budget (kr.)':p.budget||0,'Budgetnote':p.budgetNote||'','Bemærkning':p.note||''};
+  }).filter(Boolean);
+  const med=u.members.map(p=>({'ID':p.id,'Funktion/initialer':p.name,'Team':uTeamName(p.team),'Kapacitet (ÅV)':p.capacity==null?1:p.capacity}));
+  const tm=u.teams.map(t=>({'ID':t.id,'Navn':t.name}));
+  const sek=[{'Sektionsleder':u.sectionLeader||''}];
+  try{
+    const wb=XLSX.utils.book_new();
+    const add=(rows,name,wch)=>{const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{}]);if(wch)ws['!cols']=wch;XLSX.utils.book_append_sheet(wb,ws,name);};
+    add(plans,'Delprocesplaner',W([14,24,30,40,10,20,54,30,40,50,40,26,26,26,26,34,12,24,30]));
+    add(med,'Medarbejdere',W([10,32,22,14]));
+    add(tm,'Teams',W([10,26]));
+    add(sek,'Sektion',W([30]));
+    XLSX.writeFile(wb,'opgaveoverblik-'+String(anyName(uid)).replace(/[^a-zA-Z0-9æøåÆØÅ_-]+/g,'_')+'.xlsx');
+  }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
+}
+function uImportXLSX(file){
+  if(!uCanEdit())return uNoRights();
+  readXlsx(file,wb=>{
+    const sheet=n=>wb.Sheets[n]?XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''}):null;
+    const plRows=sheet('Delprocesplaner');
+    if(!plRows)throw new Error('arket »Delprocesplaner« mangler');
+    const u=blankUnit();
+    const tmRows=sheet('Teams'),medRows=sheet('Medarbejdere'),sekRows=sheet('Sektion');
+    u.teams=(tmRows||[]).filter(x=>str(x['Navn'])).map(x=>({id:str(x['ID'])||newUid('ut'),name:str(x['Navn'])}));
+    const teamByName={};u.teams.forEach(t=>teamByName[t.name.trim().toLowerCase()]=t.id);
+    u.members=(medRows||[]).filter(x=>str(x['Funktion/initialer']||x['Navn'])).map(x=>({id:str(x['ID'])||newUid('um'),name:str(x['Funktion/initialer']||x['Navn']),team:teamByName[str(x['Team']).toLowerCase()]||'',capacity:parseAAV(x['Kapacitet (ÅV)'])||1}));
+    const memByName={};u.members.forEach(m=>memByName[m.name.trim().toLowerCase()]=m.id);
+    const ids=v=>String(v||'').split(/[;\n]/).map(x=>x.trim()).filter(Boolean).map(nm=>memByName[nm.toLowerCase()]).filter(Boolean);
+    let skipped=0;
+    plRows.forEach(x=>{
+      const sid=str(x['Delproces-ID']);
+      if(!sid)return;
+      if(!db.subs.some(s=>s.id===sid&&roleIds(s,'RU').includes(enhedOpen))){skipped++;return;}
+      const resources=String(x['Ressourcer ÅV']||'').split(';').map(v=>v.trim()).filter(Boolean).map(part=>{const k=part.lastIndexOf(':');if(k<0)return null;const e=memByName[part.slice(0,k).trim().toLowerCase()];if(!e)return null;return {e,h:Math.max(0.01,parseAAV(part.slice(k+1))||0.01)};}).filter(Boolean);
+      u.plans[sid]=normPlan({sub:sid,
+        status:['aktiv','planlagt','inaktiv'].includes(str(x['Status']))?str(x['Status']):'aktiv',
+        team:teamByName[str(x['Team']).toLowerCase()]||'',
+        weeks:parseWeeksStr(x['Uger (1-52)']),
+        weekNotes:(()=>{try{const o=JSON.parse(x['Ugenoter']||'{}');return o&&typeof o==='object'?o:{};}catch(e){return {};}})(),
+        raci:{A:ids(x['Ansvarlig (A)']),R:ids(x['Udførende (R)']),C:ids(x['Konsulteret (C)']),I:ids(x['Informeret (I)'])},
+        resources,formaal:str(x['Formål']),beskrivelse:str(x['Beskrivelse']),mandat:str(x['Mandat']),
+        budget:parseKr(x['Budget (kr.)']),budgetNote:str(x['Budgetnote']),note:str(x['Bemærkning'])});
+    });
+    u.sectionLeader=(sekRows&&sekRows[0]&&sekRows[0]['Sektionsleder']!=null)?String(sekRows[0]['Sektionsleder']):curUnit().sectionLeader;
+    u.log=curUnit().log;
+    unitDb[enhedOpen]=u;
+    Object.keys(planIndex).forEach(sid=>{if(planIndex[sid])planIndex[sid].delete(enhedOpen);if(planIndex[sid]&&!planIndex[sid].size)delete planIndex[sid];});
+    Object.keys(u.plans).forEach(sid=>{(planIndex[sid]=planIndex[sid]||new Set()).add(enhedOpen);});
+    uLog('Importerede enhedens data fra Excel: '+Object.keys(u.plans).length+' planer, '+u.members.length+' medarbejdere'+(skipped?' ('+skipped+' rækker sprunget over — delprocessen findes ikke, eller enheden er ikke R på den)':''));
+    saveUnit();render();
+    alert('Importeret: '+Object.keys(u.plans).length+' planer og '+u.members.length+' medarbejdere.'+(skipped?'\n\n'+skipped+' rækker blev sprunget over, fordi delprocessen ikke findes i landskabet, eller enheden ikke er sat som Udførende (R - UDDADM) på den.':''));
+  },err=>'Kunne ikke importere Excel-filen ('+err.message+'). Tjek at den stammer fra enhedens egen eksport (arket »Delprocesplaner«).');
+}
+
+/* ============================================================
+   BRUGERE & RETTIGHEDER (administrationsside — kun for admin)
+   Brugere oprettes i Supabase Auth; her kobles deres e-mail til en
+   rolle: admin (styrer brugere + struktur), landskab (kun struktur)
+   eller enhed (kun egen enheds planlægningsdata).
+   ============================================================ */
+let admUsers=[];
+async function openAdmin(){
+  closeMenu();
+  if(!isAdmin())return alert('Kræver administrator-rollen.');
+  try{
+    const {data,error}=await sb.from('app_users').select('*').order('email');
+    if(error)throw error;
+    admUsers=data||[];
+  }catch(e){return alert('Kunne ikke hente brugere: '+e.message);}
+  renderAdmin();
+  $('settings').classList.add('open');
+}
+function renderAdmin(){
+  const roleOpt=cur=>[['admin','Administrator'],['landskab','Landskabsredaktør'],['enhed','Enhedsredaktør']].map(([v,l])=>opt(v,l,cur)).join('');
+  const unitOpt=cur=>`<option value=""${!cur?' selected':''}>—</option>`+regList('unitsUdd').map(x=>opt(x.id,x.name,cur)).join('');
+  const rows=admUsers.map((x,i)=>`<div class="admrow">
+      <input type="text" value="${esc(x.email)}" disabled>
+      <select onchange="admSet(${i},'role',this.value)">${roleOpt(x.role)}</select>
+      <select onchange="admSet(${i},'enhed',this.value)" ${x.role==='enhed'?'':'disabled'}>${unitOpt(x.enhed||'')}</select>
+      <button class="iconbtn" onclick="admDelete(${i})" title="Fjern">×</button>
+    </div>`).join('')||`<div style="font-size:13px;color:var(--faint);padding:6px 0">Ingen brugere endnu.</div>`;
+  const add=`<div class="admrow" style="border-bottom:0;margin-top:8px">
+      <input type="email" id="adm-email" placeholder="navn@ku.dk">
+      <select id="adm-role">${roleOpt('enhed')}</select>
+      <select id="adm-enhed">${unitOpt('')}</select>
+      <button class="iconbtn" style="color:var(--wine)" onclick="admAdd()" title="Tilføj">+</button>
+    </div>`;
+  $('settings').innerHTML=modalBox('Brugere & rettigheder','closeSettings()',`<div class="mbody">
+    <div class="admrow" style="border-bottom:1px solid var(--line-strong);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:600"><span>E-mail</span><span>Rolle</span><span>Enhed (kun enhedsredaktør)</span><span></span></div>
+    ${rows}${add}
+    <div style="font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.5">Selve login-brugeren oprettes først i Supabase (Authentication → Users). Her kobles e-mailen til rettigheder: <b>Administrator</b> styrer brugere og landskabets struktur, <b>Landskabsredaktør</b> redigerer kun strukturen (procesområder, hovedprocesser, delprocesser, RACI, registre), og <b>Enhedsredaktør</b> redigerer kun sin egen enheds planlægningsdata. Alle — også uden login — kan læse alt.</div>
+  </div>`);
+}
+async function admSet(i,field,val){
+  const x=admUsers[i];if(!x)return;
+  x[field]=val;
+  if(field==='role'&&val!=='enhed')x.enhed=null;
+  try{const {error}=await sb.from('app_users').upsert({email:x.email,role:x.role,enhed:x.enhed||null});if(error)throw error;}
+  catch(e){alert('Kunne ikke gemme: '+e.message);}
+  renderAdmin();
+}
+async function admAdd(){
+  const email=String($('adm-email').value||'').trim().toLowerCase();
+  const role=$('adm-role').value,enhed=role==='enhed'?($('adm-enhed').value||null):null;
+  if(!email||!email.includes('@'))return alert('Skriv en gyldig e-mail.');
+  if(role==='enhed'&&!enhed)return alert('Vælg hvilken enhed brugeren hører til.');
+  try{const {error}=await sb.from('app_users').upsert({email,role,enhed});if(error)throw error;}
+  catch(e){return alert('Kunne ikke tilføje: '+e.message);}
+  await openAdmin();
+}
+async function admDelete(i){
+  const x=admUsers[i];if(!x)return;
+  if(!confirm('Fjern rettighederne for '+x.email+'? (Selve login-brugeren i Supabase slettes ikke.)'))return;
+  try{const {error}=await sb.from('app_users').delete().eq('email',x.email);if(error)throw error;}
+  catch(e){return alert('Kunne ikke fjerne: '+e.message);}
+  await openAdmin();
+}
+
+/* ============================================================
+   MIGRERING — læs den gamle jsonb-række (tabellen "landskab",
+   id=1) og skriv landskabet til de nye relationelle tabeller.
+   ============================================================ */
+async function migrateOld(){
+  closeMenu();
+  if(!canEdit())return showLogin();
+  if(!sb)return alert('Supabase er ikke tilgængelig — tjek internetforbindelsen.');
+  const hasData=db.subs.length||db.mains.length||db.areas.length;
+  const msg=hasData
+    ?'De nye tabeller indeholder allerede data. Migrering OVERSKRIVER dem med indholdet fra den gamle database (tabellen "landskab", række id=1). Fortsæt?'
+    :'Hent landskabet fra den gamle database (tabellen "landskab", række id=1) og skriv det til de nye tabeller?';
+  if(!confirm(msg))return;
+  try{
+    const {data,error}=await sb.from('landskab').select('data').eq('id',1).single();
+    if(error)throw error;
+    const old=(typeof data.data==='string')?JSON.parse(data.data):(data&&data.data);
+    if(!old||!Array.isArray(old.subs))throw new Error('uventet format i den gamle række');
+    db=old;
+    (db.log||[]).forEach((e,i)=>{if(!e.id)e.id='lg'+Date.now().toString(36)+i;});
+    normalizeDb();
+    logChange('Migrerede landskabet fra den gamle database: '+db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser');
+    await saveDb();
+    resetUi();render();
+    alert('Migreret: '+db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder.\n\nTjek at alt ser rigtigt ud — den gamle tabel er ikke ændret og kan stadig bruges som backup.');
+  }catch(e){alert('Migrering mislykkedes: '+e.message);}
+}
+
+initAuth();
+</script>
+</body>
+</html>
