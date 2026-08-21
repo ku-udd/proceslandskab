@@ -948,9 +948,13 @@ function renderEnhed(){
   let h=viewHead('Enheder',`${plural(uids.length,'enhed','enheder')} · ${mainsCount(subs)} hovedprocesser · ${subs.length} delprocesser`);
   uids.forEach(uid=>{
     const mine=subs.filter(s=>involved(s).includes(uid)),key='en>'+uid;
-    const nPlans=regOf(uid)==='unitsUdd'?planCountFor(uid):0;
-    const openBtn=regOf(uid)==='unitsUdd'?`<div class="unitopen"><button class="btn" onclick="event.stopPropagation();openEnhed('${jsq(uid)}')">Åbn enhedens opgaveoverblik${nPlans?` · ${plural(nPlans,'plan','planer')}`:''} →</button></div>`:'';
-    h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,openBtn+mainsBlock(mine,key,uid,force));
+    if(regOf(uid)==='unitsUdd'){
+      /* UDD-enheder: klik åbner direkte enhedens opgaveoverblik */
+      const nPlans=planCountFor(uid);
+      h+=branch(false,`openEnhed('${jsq(uid)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mine.length} delprocesser${nPlans?` · ${plural(nPlans,'plan','planer')}`:''} · åbner opgaveoverblikket`,'');
+    }else{
+      h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,mainsBlock(mine,key,uid,force));
+    }
   });
   return h;
 }
