@@ -517,7 +517,7 @@ const lsDel=k=>{try{localStorage.removeItem(k);}catch(e){}};
 let db={areas:[],mains:[],subs:[],unitsUdd:[],unitsAdm:[],unitsFak:[],procesejere:[],driftejere:[],kapabiliteter:[],delkapabiliteter:[],leaderteams:[],workgroups:[]};
 let navnOpslag={};   /* id → navn, kun i hukommelsen */
 let funkOpslag={};   /* id → funktion, kun i hukommelsen (fallback-visning når navnet mangler) */
-const OWNER_REGS=['procesejere','driftejere'];
+const OWNER_REGS=['procesejere','driftejere','ledelsesfunktioner'];
 
 /* Rollerne på en delproces — hver rolle henter sine værdier i ét eller flere registre */
 const ROLE_DEFS=[
@@ -543,7 +543,8 @@ const REGS={
   kapabiliteter:{label:'Kapabilitet',one:'kapabilitet',pre:'ka',sheet:'Kapabilitet',placeholder:'Kapabilitetens navn',kind:'ref',color:'#2F6F8F'},
   delkapabiliteter:{label:'Delkapabilitet',one:'delkapabilitet',pre:'dk',sheet:'Delkapabilitet',parent:'kapabiliteter',placeholder:'Delkapabilitetens navn',kind:'ref',color:'#4F7A4A'},
   leaderteams:{label:'Lederteam',one:'lederteam',pre:'lt',sheet:'Lederteam',alt:['Lederteams'],placeholder:'Lederteamets navn',kind:'ref',color:'#7A5A8F'},
-  workgroups:{label:'Arbejdsfællesskab',one:'arbejdsfællesskab',pre:'af',sheet:'Arbejdsfællesskab',alt:['Arbejdsfællesskaber'],parent:'leaderteams',placeholder:'Arbejdsfællesskabets navn',kind:'ref',color:'#C2891A'}
+  workgroups:{label:'Arbejdsfællesskab',one:'arbejdsfællesskab',pre:'af',sheet:'Arbejdsfællesskab',alt:['Arbejdsfællesskaber'],parent:'leaderteams',placeholder:'Arbejdsfællesskabets navn',kind:'ref',color:'#C2891A'},
+  ledelsesfunktioner:{label:'Ledelsesfunktioner',one:'ledelsesfunktion',pre:'lf',sheet:'Ledelsesfunktioner',placeholder:'Funktion — ingen navne',kind:'owner2',color:'#5B3A6B'}
 };
 const REG_KEYS=Object.keys(REGS);
 const UNIT_REGS=REG_KEYS.filter(k=>REGS[k].kind==='unit');
@@ -1565,12 +1566,12 @@ function renderSettings(){
       <div style="font-size:11.5px;color:var(--muted);margin-top:3px;min-height:1em">${val?(idNames(val)!==val?'Vises som: <b>'+esc(idNames(val))+'</b>':'Ingen match i navnearket — id\'et vises, som det står'):''}</div>`;
     const fld=(i,label,prop,val,ph)=>fldRaw(label,val,`db.unitsUdd[${i}].${prop}=this.value.trim()`,ph);
     body=grpHead('Uddannelsesadministrationen','var(--wine)')
-      +fldRaw('Vicedirektør (ID fra fanen Navne)',db.ledelse.vd,`db.ledelse.vd=this.value.trim()`,'Fx VD-01')
-      +fldRaw('Uddannelseschefer (ID\'er fra fanen Navne — adskil med komma)',db.ledelse.uc,`db.ledelse.uc=this.value.trim()`,'Fx UC-01, UC-02, UC-03')
+      +fldRaw('Vicedirektør (ID fra fanen Navne)',db.ledelse.vd,`db.ledelse.vd=this.value.trim()`,'ID fra registret Ledelsesfunktioner')
+      +fldRaw('Uddannelseschefer (ID\'er fra fanen Navne — adskil med komma)',db.ledelse.uc,`db.ledelse.uc=this.value.trim()`,'ID\'er adskilt med komma')
       +db.unitsUdd.map((x,i)=>grpHead(x.name,REGS.unitsUdd.color)
-      +fld(i,'Uddannelseschef (ID fra fanen Navne)','uc',x.uc||'','ID fra fanen Navne')
-      +fld(i,'Sektionsleder (ID fra fanen Navne)','sl',x.sl||'','ID fra fanen Navne — fx DE-17')).join('')
-      +hintBox('Skriv ID\'et fra navnearket — aldrig navnet. Navne vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen. Vicedirektør og uddannelseschefer vises i landskabets header; enhedens ledelse vises i enhedens opgaveoverblik.');
+      +fld(i,'Uddannelseschef (ID fra fanen Navne)','uc',x.uc||'','ID — fx en ledelsesfunktion')
+      +fld(i,'Sektionsleder (ID fra fanen Navne)','sl',x.sl||'','Fx DE-17 (driftsejer) — eller en ledelsesfunktion')).join('')
+      +hintBox('Skriv et ID — fx en ledelsesfunktion fra fanen Ledelsesfunktioner eller en driftsejer. Funktionen vises altid; navnet vises i stedet, når navnearket er indlæst. Navne vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen. Vicedirektør og uddannelseschefer vises i landskabets header; enhedens ledelse vises i enhedens opgaveoverblik.');
   }else if(REGS[settingsTab]){
     const reg=settingsTab,cfg=REGS[reg],isUnit=cfg.kind==='unit',isChild=!!cfg.parent,pOne=isChild?REGS[cfg.parent].one:'';
     const moveSel=(x,i)=>isUnit?`<select title="Flyt til andet enhedsregister" onchange="moveReg('${reg}',${i},this.value)">${UNIT_REGS.map(r=>opt(r,REGS[r].label,reg)).join('')}</select>`
@@ -1602,7 +1603,7 @@ function renderSettings(){
       workgroups:'Hvert arbejdsfællesskab hører til ét lederteam. På delprocessen kan du kun vælge blandt arbejdsfællesskaberne under det valgte lederteam.',
       kapabiliteter:'Delkapabiliteterne knyttes til kapabiliteterne herfra — se fanen Delkapabilitet.',
       leaderteams:'Arbejdsfællesskaberne knyttes til lederteams herfra — se fanen Arbejdsfællesskab.'};
-    const hint=cfg.kind==='owner'
+    const hint=(cfg.kind==='owner'||cfg.kind==='owner2')
       ? 'Skriv kun FUNKTIONEN (fx en stillingsbetegnelse) — aldrig navne. Navne vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen.'
       : HINTS[reg]||(isUnit
       ? 'Dropdownen flytter enheden til et andet enhedsregister; alle delprocesser følger med. Konsulteres (C) og Informeres (I) kan vælge frit på tværs af de tre enhedsregistre.'
@@ -1615,7 +1616,7 @@ function renderSettings(){
       ${tab('areas',`Procesområder (${db.areas.length})`)}${tab('mains',`Hovedprocesser (${db.mains.length})`)}
       ${regTabs(['kapabiliteter','delkapabiliteter'])}<div class="brk"></div>
       ${regTabs(UNIT_REGS)}<button class="${settingsTab==='ledelse'?'on':''}" onclick="settingsTab='ledelse';renderSettings()">Ledelse</button><div class="brk"></div>
-      ${regTabs(['procesejere','driftejere'])}<div class="brk"></div>
+      ${regTabs(['procesejere','driftejere','ledelsesfunktioner'])}<div class="brk"></div>
       ${regTabs(['leaderteams','workgroups'])}
     </div>
     <div class="mbody">${body}</div>`);
@@ -1652,7 +1653,7 @@ function moveArea(i,dir){const x=db.areas[i];if(!swapWithin(db.areas,x,db.areas,
 function addMain(){db.mains.push({id:'h'+Date.now(),area:firstArea(),title:'Ny hovedproces'});logChange('Oprettede en ny hovedproces');saveRS();}
 function removeMain(id){logChange('Slettede hovedprocessen '+qt(mainById(id).title));db.mains=db.mains.filter(m=>m.id!==id);saveRS(1);}
 function moveMain(id,dir){const m=db.mains.find(x=>x.id===id);if(!m)return;if(!swapWithin(db.mains,m,db.mains.filter(x=>x.area===m.area),dir))return;logChange('Flyttede hovedprocessen '+qt(m.title)+' '+dirWord(dir));saveRS(1);}
-function addReg(reg){const x={id:REGS[reg].pre+Date.now().toString(36),name:'Ny '+REGS[reg].one};if(REGS[reg].parent)x.parent='';db[reg].push(x);logChange('Oprettede '+(REGS[reg].kind==='owner'?'en ny ':'ny ')+REGS[reg].one);saveRS();}
+function addReg(reg){const x={id:REGS[reg].pre+Date.now().toString(36),name:'Ny '+REGS[reg].one};if(REGS[reg].parent)x.parent='';db[reg].push(x);logChange('Oprettede '+(REGS[reg].kind==='owner'||REGS[reg].kind==='owner2'?'en ny ':'ny ')+REGS[reg].one);saveRS();}
 function setRegParent(reg,i,parentId){
   const x=db[reg][i];if(!x)return;
   const p=REGS[reg].parent,f=REF_FIELDS[reg],pf=REF_FIELDS[p];
@@ -1784,6 +1785,9 @@ function importXLSX(file){if(!canEdit())return showLogin();
       nd.log=Array.isArray(db.log)?db.log:[];
       /* ledelses-id'er (uc/sl) følger med enheder, der beholder deres id */
       nd.unitsUdd.forEach(u=>{const ex=db.unitsUdd.find(x=>x.id===u.id);if(ex){u.sl=ex.sl||'';u.uc=ex.uc||'';}});
+      /* ældre Excel-filer uden arket Ledelsesfunktioner: behold registret som det er */
+      if(!nd.ledelsesfunktioner.length&&(db.ledelsesfunktioner||[]).length)nd.ledelsesfunktioner=db.ledelsesfunktioner;
+      nd.ledelse=db.ledelse;
       db=nd;normalizeDb();
       const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder';
       logChange('Importerede hele landskabet fra Excel: '+sum);
@@ -2027,8 +2031,8 @@ const parseAAV=v=>{if(typeof v==='number')return v;const n=parseFloat(String(v==
 const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--warn)':st==='inaktiv'?'var(--over)':'var(--muted)';return `<span class="status-dot" style="background:${c}"></span>`;};
 function blankUnit(){return {members:[],teams:[],plans:{},log:[]};}
 /* ledere gemmes som ID — navnet slås op i navnearket (fallback: id'et/teksten selv) */
-const uLeaderName=id=>id?(navnOpslag[id]||funkOpslag[id]||id):'';
-const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(id=>navnOpslag[id]||funkOpslag[id]||id).join(', ');
+const uLeaderName=id=>{if(!id)return'';const r=regOf(id);return navnOpslag[id]||(r?regName(r,id):'')||funkOpslag[id]||id;};
+const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(uLeaderName).join(', ');
 const curUnit=()=>unitDb[enhedOpen]||blankUnit();
 const uCanEdit=()=>canEditEnhed(enhedOpen);
 const newUid=p=>p+Date.now().toString(36)+Math.floor(Math.random()*1e4);
