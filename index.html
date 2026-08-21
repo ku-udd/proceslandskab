@@ -490,17 +490,17 @@
     <div class="tb-row">
     <input type="search" id="f-q" placeholder="Søg i delprocesser…" aria-label="Søg">
     <button class="btn primary" id="btn-new"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Ny delproces</button>
-    <button class="btn" id="btn-settings"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Struktur & organisation</button>
     <div class="menu-wrap">
       <button class="btn" id="btn-data">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="menu" id="data-menu">
+        <button id="btn-settings" onclick="closeMenu();openSettings()">Struktur &amp; organisation</button>
+        <div class="sep" id="sep-settings"></div>
         <button id="mi-export" onclick="exportXLSX()">Eksportér til Excel (.xlsx)</button>
         <button id="mi-import" onclick="$('import-xlsx').click()">Importér fra Excel (.xlsx)</button>
         <div class="sep" id="sep-log"></div>
         <button onclick="closeMenu();openLog()" id="mi-log">Seneste ændringer</button>
         <div class="sep" id="sep-admin"></div>
         <button onclick="closeMenu();openAdmin()" id="mi-admin">Brugere &amp; rettigheder</button>
-        <button onclick="migrateOld()" id="mi-migrate">Migrér fra gammel database</button>
       </div>
     </div>
     <input type="file" id="import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
@@ -1903,7 +1903,7 @@ async function initAuth(){
 /* slår redigerings-UI til/fra ud fra login-status */
 function applyAuthUi(){
   const on=canEdit();
-  ['btn-new','btn-settings','mi-export','mi-import','sep-data','sep-log','mi-log','tab-liste','mi-migrate'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
+  ['btn-new','btn-settings','sep-settings','mi-export','mi-import','sep-log','mi-log','tab-liste'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
   ['mi-admin','sep-admin'].forEach(id=>{const el=$(id);if(el)el.style.display=isAdmin()?'':'none';});
   const auth=$('btn-auth');
   if(auth)auth.innerHTML='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -2033,7 +2033,6 @@ SEG_BTNS.forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 let qTimer=null;
 evt('f-q','input',e=>{clearTimeout(qTimer);const v=e.target.value;qTimer=setTimeout(()=>{filters.q=v.trim();expandMatches();render();},200);});
 evt('btn-new','click',()=>newSub());
-evt('btn-settings','click',openSettings);
 evt('import-xlsx','change',e=>{if(e.target.files[0])importXLSX(e.target.files[0]);e.target.value='';});
 evt('import-navne','change',e=>{if(e.target.files[0])importNavne(e.target.files[0]);e.target.value='';});
 evt('btn-auth','click',()=>{session?logout():showLogin();});
@@ -2477,7 +2476,7 @@ function uRenderDrawerView(){
   $('drawer').innerHTML=`
     <div class="dr-head">
       <button class="dr-close" onclick="uCloseDrawer()" aria-label="Luk">×</button>
-      <div class="crumb" style="color:${col}">${isAndet?'Andet · enhedens egne opgaver':`${esc(area(oid).name)} · ${esc(m.title)} · <span class="link" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="openDrawer('${jsq(sdp.id)}')" title="Vis delprocessens oplysninger fra landskabet">${esc(sdp.title)}</span>`}</div>
+      <div class="crumb" style="color:${col}">${isAndet?'Andet':`<span class="link" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="openDrawer('${jsq(sdp.id)}')" title="Vis delprocessens oplysninger fra landskabet">${esc(sdp.title)}</span>`}</div>
       <h2>${esc(t.title)}</h2>
       <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
         <span class="pill">${statusDot(t.status)}${capFirst(t.status)}</span>
@@ -2642,7 +2641,7 @@ function uRenderSettings(){
   }
   const tab=(id,label)=>`<button class="${uState.settingsTab===id?'on':''}" onclick="uState.settingsTab='${id}';uRenderSettings()">${label}</button>`;
   $('settings').innerHTML=modalBox('Teams og medarbejdere · '+esc(anyName(enhedOpen)),'uCloseSettings()',`<div class="tabbar">
-      ${tab('people',`Medarbejdere (${u.members.length})`)}${tab('teams',`Teams (${u.teams.length})`)}
+      ${tab('teams',`Teams (${u.teams.length})`)}${tab('people',`Medarbejdere (${u.members.length})`)}
     </div><div class="mbody">${body}</div>`);
 }
 let uSaveDebounce=null;
