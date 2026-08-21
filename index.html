@@ -2151,7 +2151,7 @@ function renderEnhedPage(){
     <div>
       <h2>${esc(anyName(uid))}</h2>
       ${(regItem('unitsUdd',uid)||{}).uc?`<div class="usub">Uddannelseschef · <b>${esc(uLeaderName(regItem('unitsUdd',uid).uc))}</b></div>`:''}
-      <div class="usub">${(regItem('unitsUdd',uid)||{}).sl?`Sektionsleder · <b>${esc(uLeaderName(regItem('unitsUdd',uid).sl))}</b> · `:''}${plural(subs.length,'delproces','delprocesser')} hvor enheden er udførende (R)</div>
+      ${(regItem('unitsUdd',uid)||{}).sl?`<div class="usub">Sektionsleder · <b>${esc(uLeaderName(regItem('unitsUdd',uid).sl))}</b></div>`:''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="closeEnhed()">← Tilbage til landskabet</button>
