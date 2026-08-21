@@ -325,6 +325,10 @@
   .unitcard.vdcard{padding-top:11px;background:var(--surface-2)}
   .unitleders{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:6px}
   .ulf{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .ulpills{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+  .ulpill{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);padding:3px 4px 3px 10px;font-size:12.5px}
+  .ulpill .iconbtn{width:18px;height:18px;font-size:12px}
+  .ulpills select{flex:1;min-width:150px}
   .unitleders .ull{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .unitleders select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--surface);width:100%;min-width:0}
   @media(max-width:760px){.unitleders{grid-template-columns:1fr}}
@@ -1627,7 +1631,7 @@ function renderSettings(){
       if(reg!=='unitsUdd')return row;
       const leders=`<div class="unitleders">
         <div class="ulf"><span class="ull">Chef</span><select onchange="db.unitsUdd[${i}].uc=this.value;scheduleSave()"><option value=""${!x.uc?' selected':''}>— vælg chef</option><optgroup label="Uddannelseschefer (AL UDD)">${db.aludd.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup><optgroup label="Procesejer">${db.procesejere.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup></select></div>
-        <div class="ulf"><span class="ull">Leder</span><select onchange="db.unitsUdd[${i}].sl=this.value;scheduleSave()"><option value=""${!x.sl?' selected':''}>— vælg leder (driftsejer)</option>${db.driftejere.map(k=>opt(k.id,uLeaderName(k.id),x.sl)).join('')}</select></div>
+        <div class="ulf"><span class="ull">${idList(x.sl).length>1?'Ledere':'Leder'}</span><div class="ulpills">${idList(x.sl).map(id=>`<span class="ulpill">${esc(uLeaderName(id))}<button class="iconbtn" onclick="uddRemoveLeder(${i},'${jsq(id)}')" title="Fjern">×</button></span>`).join('')}<select onchange="uddAddLeder(${i},this.value);this.value=''"><option value="">+ Tilføj leder (driftsejer)…</option>${db.driftejere.filter(k=>!idList(x.sl).includes(k.id)).map(k=>opt(k.id,uLeaderName(k.id),'')).join('')}</select></div></div>
       </div>`;
       return `<div class="unitcard">${row}${leders}</div>`;};
     let rows='';
@@ -2087,7 +2091,8 @@ const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--war
 function blankUnit(){return {members:[],teams:[],tasks:[],log:[]};}
 /* ledere gemmes som ID — navnet slås op i navnearket (fallback: id'et/teksten selv) */
 const uLeaderName=id=>{if(!id)return'';const r=regOf(id);return navnOpslag[id]||(r?regName(r,id):'')||funkOpslag[id]||id;};
-const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(uLeaderName).join(', ');
+const idList=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);
+const idNames=v=>idList(v).map(uLeaderName).join(', ');
 const curUnit=()=>unitDb[enhedOpen]||blankUnit();
 const uCanEdit=()=>canEditEnhed(enhedOpen);
 const newUid=p=>p+Date.now().toString(36)+Math.floor(Math.random()*1e4);
@@ -2227,7 +2232,7 @@ function renderEnhedPage(){
     <div>
       <h2>${esc(anyName(uid))}</h2>
       ${(regItem('unitsUdd',uid)||{}).uc?`<div class="usub">Chef · <b>${esc(uLeaderName(regItem('unitsUdd',uid).uc))}</b></div>`:''}
-      ${(regItem('unitsUdd',uid)||{}).sl?`<div class="usub">Sektionsleder · <b>${esc(uLeaderName(regItem('unitsUdd',uid).sl))}</b></div>`:''}
+      ${(regItem('unitsUdd',uid)||{}).sl?`<div class="usub">${idList(regItem('unitsUdd',uid).sl).length>1?'Sektionsledere':'Sektionsleder'} · <b>${esc(idNames(regItem('unitsUdd',uid).sl))}</b></div>`:''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="closeEnhed()">← Tilbage til landskabet</button>
@@ -2271,6 +2276,8 @@ function uMatch(t){
 }
 function uToggleArea(id){uState.openAreas.has(id)?uState.openAreas.delete(id):uState.openAreas.add(id);render();}
 function uToggleMain(id){uState.openMains.has(id)?uState.openMains.delete(id):uState.openMains.add(id);render();}
+function uddAddLeder(i,id){if(!id)return;const x=db.unitsUdd[i];if(!x)return;const ids=idList(x.sl);if(!ids.includes(id))ids.push(id);x.sl=ids.join(', ');scheduleSave();renderSettings();}
+function uddRemoveLeder(i,id){const x=db.unitsUdd[i];if(!x)return;x.sl=idList(x.sl).filter(k=>k!==id).join(', ');scheduleSave();renderSettings();}
 function uToggleSub(id){uState.openSubs.has(id)?uState.openSubs.delete(id):uState.openSubs.add(id);render();}
 function uAvatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`;show.forEach(id=>s+=`<span class="avatar" title="${esc(umName(id))}">${initials(umName(id))}</span>`);if(ids.length>4)s+=`<span class="avatar more">+${ids.length-4}</span>`;return s+`</div>`;}
 function uRenderPlanList(){
