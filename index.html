@@ -1769,18 +1769,19 @@ function importXLSX(file){if(!canEdit())return showLogin();
 /* NAVNE FRA EXCEL — kun i hukommelsen. Fanen "Navne" med kolonnerne ID, Funktion, Navn. Genindlæses efter refresh. */
 function importNavne(file){
   readXlsx(file,wb=>{
-      /* fanen "Navne" — ellers første fane med kolonnerne ID og Navn */
+      /* ALLE faner med kolonnerne ID og Navn læses og lægges sammen (fx "Navne" + én fane pr. enhed) */
       const toJson=n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});
-      let rows=wb.Sheets['Navne']?toJson('Navne'):null;
-      if(!rows||!rows.length)for(const nm of wb.SheetNames){const rs=toJson(nm);if(rs.length&&('ID'in rs[0])&&('Navn'in rs[0])){rows=rs;break;}}
-      if(!rows||!rows.length)throw new Error('fanen »Navne« mangler eller er tom');
       const map={};let n=0;
-      rows.forEach(x=>{const id=str(x['ID']),navn=str(x['Navn']);if(id&&navn){map[id]=navn;n++;}});
-      if(!n)throw new Error('ingen rækker med både ID og Navn');
+      wb.SheetNames.forEach(nm=>{
+        const rs=toJson(nm);
+        if(!rs.length||!('ID'in rs[0])||!('Navn'in rs[0]))return;
+        rs.forEach(x=>{const id=str(x['ID']),navn=str(x['Navn']);if(id&&navn){map[id]=navn;n++;}});
+      });
+      if(!n)throw new Error('ingen faner med kolonnerne ID og Navn');
       navnOpslag=map;
       render();renderNavnStatus();
       if(drawerId&&!editBuf)renderDrawerView();else if(editBuf)renderRolesEdit();
-  },err=>'Kunne ikke læse navnearket ('+err.message+'). Tjek at der er en fane »Navne« med kolonnerne ID, Funktion og Navn.');
+  },err=>'Kunne ikke læse navnearket ('+err.message+'). Alle faner med kolonnerne ID og Navn læses — tjek at mindst én findes.');
 }
 function renderNavnStatus(){
   const el=$('navnstat'),btn=$('btn-navne');
