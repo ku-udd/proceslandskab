@@ -23,6 +23,10 @@
   button{font:inherit}
 
   header.top{padding:24px 0 6px}
+  .app{position:relative}
+  #btn-auth{position:absolute;top:20px;right:22px;z-index:40;display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;padding:6px 11px;border-radius:999px}
+  #btn-auth .ic{width:14px;height:14px}
   .headrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-top:7px}
   .headrow .savestat{margin-left:auto}
   .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--wine);font-weight:600}
@@ -1825,7 +1829,10 @@ function applyAuthUi(){
   ['btn-new','btn-settings','mi-export','mi-import','sep-data','sep-log','mi-log','tab-liste','mi-migrate'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
   ['mi-admin','sep-admin'].forEach(id=>{const el=$(id);if(el)el.style.display=isAdmin()?'':'none';});
   const auth=$('btn-auth');
-  if(auth)auth.textContent=session?'Log ud':'Log ind';
+  if(auth)auth.innerHTML='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    +(session?'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>'
+             :'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>')
+    +'</svg>'+(session?'Log ud':'Log ind');
   /* Liste-fanen findes kun for indloggede; logges man ud derfra, falder man tilbage til Emne */
   if(!on&&currentView==='liste'){setView('landskab');return;}
   render();
