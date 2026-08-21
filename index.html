@@ -490,7 +490,7 @@
     <div class="tb-row">
     <input type="search" id="f-q" placeholder="Søg i delprocesser…" aria-label="Søg">
     <button class="btn primary" id="btn-new"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Ny delproces</button>
-    <div class="menu-wrap">
+    <div class="menu-wrap" id="data-wrap">
       <button class="btn" id="btn-data">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="menu" id="data-menu">
         <button id="btn-settings" onclick="closeMenu();openSettings()">Struktur &amp; organisation</button>
@@ -1903,7 +1903,8 @@ async function initAuth(){
 /* slår redigerings-UI til/fra ud fra login-status */
 function applyAuthUi(){
   const on=canEdit();
-  ['btn-new','btn-settings','sep-settings','mi-export','mi-import','sep-log','mi-log','tab-liste'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
+  ['btn-new','btn-settings','sep-settings','mi-export','mi-import','sep-log','mi-log','tab-liste','data-wrap'].forEach(id=>{const el=$(id);if(el)el.style.display=on?'':'none';});
+  const dw=$('data-wrap');if(dw&&isAdmin())dw.style.display='';
   ['mi-admin','sep-admin'].forEach(id=>{const el=$(id);if(el)el.style.display=isAdmin()?'':'none';});
   const auth=$('btn-auth');
   if(auth)auth.innerHTML='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -2225,16 +2226,17 @@ function renderEnhedPage(){
     <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
     <select onchange="uState.filters.status=this.value;render()"><option value="">Alle statusser</option>${UNIT_STATUS.map(s=>opt(s.v,s.l,f.status)).join('')}</select>
     <span class="spacer"></span>
-    <div class="udatawrap">
+    ${uCanEdit()?`<div class="udatawrap">
       <button class="btn" onclick="event.stopPropagation();$('u-data-menu').classList.toggle('open')">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="menu" id="u-data-menu">
-        ${uCanEdit()?`<button onclick="uCloseMenu();uOpenSettings()">Teams og medarbejdere</button><div class="sep"></div>`:''}
+        <button onclick="uCloseMenu();uOpenSettings()">Teams og medarbejdere</button>
+        <div class="sep"></div>
         <button onclick="uCloseMenu();uExportXLSX()">Eksportér til Excel (.xlsx)</button>
-        ${uCanEdit()?`<button onclick="uCloseMenu();$('u-import-xlsx').click()">Importér fra Excel (.xlsx)</button>`:''}
+        <button onclick="uCloseMenu();$('u-import-xlsx').click()">Importér fra Excel (.xlsx)</button>
         <div class="sep"></div>
         <button onclick="uCloseMenu();uOpenLog()">Seneste ændringer</button>
       </div>
-    </div>
+    </div>`:''}
     <input type="file" id="u-import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="if(this.files[0])uImportXLSX(this.files[0]);this.value=''">
   </div>
   <div class="kpis">
