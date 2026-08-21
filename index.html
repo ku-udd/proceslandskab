@@ -217,6 +217,8 @@
   .editline.main{grid-template-columns:1.4fr 1fr 30px 30px 32px}
   .iconbtn.mv:hover{color:var(--ink);border-color:var(--line-strong)}
   .editline.unit{grid-template-columns:1fr auto 32px}
+  .editline.unit.owner{grid-template-columns:minmax(120px,.9fr) 1fr auto 32px}
+  .editline.unitm.owner{grid-template-columns:minmax(120px,.9fr) 1fr auto 30px 30px 32px}
   .editline.unit3{grid-template-columns:1fr 190px auto 32px}
   .editline.unitm{grid-template-columns:1fr auto 30px 30px 32px}
   .editline.unit3m{grid-template-columns:1fr 220px auto 30px 30px 32px}
@@ -318,10 +320,14 @@
   .infobtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px;margin-right:7px;width:21px;height:21px;padding:0;border:0;border-radius:50%;background:none;color:var(--wine);cursor:pointer}
   .infobtn svg{width:18px;height:18px}
   .infobtn:hover{background:var(--wine);color:#fff}
-  .unitleders{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 9px;align-items:center;margin:-4px 0 10px;padding-left:2px}
+  .unitcard{border:1px solid var(--line);border-radius:11px;padding:4px 13px 12px;margin-bottom:10px;background:var(--surface)}
+  .unitcard .editline{border-bottom:0;padding:8px 0 2px}
+  .unitcard.vdcard{padding-top:11px;background:var(--surface-2)}
+  .unitleders{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:6px}
+  .ulf{display:flex;flex-direction:column;gap:4px;min-width:0}
   .unitleders .ull{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
-  .unitleders select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--surface);min-width:0}
-  @media(max-width:760px){.unitleders{grid-template-columns:auto 1fr}}
+  .unitleders select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--surface);width:100%;min-width:0}
+  @media(max-width:760px){.unitleders{grid-template-columns:1fr}}
   .udatawrap{position:relative}
   .usubfoot{padding:2px 14px 10px}
   .usubfoot .addlink{margin-top:0}
@@ -1616,11 +1622,15 @@ function renderSettings(){
     const cls=(isUnit||isChild)?(ordered?'unit3m':'unit3'):(ordered?'unitm':'unit');
     /* én række i registret; pos/n = placering blandt de rækker pilene flytter imellem */
     const rowHtml=(i,pos,n,mvFn)=>{const x=db[reg][i],used=regUsed(reg,x.id);
-      const leders=reg==='unitsUdd'?`<div class="unitleders">
-        <span class="ull">Chef</span><select onchange="db.unitsUdd[${i}].uc=this.value;scheduleSave()"><option value=""${!x.uc?' selected':''}>— vælg chef</option><optgroup label="Uddannelseschefer (AL UDD)">${db.aludd.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup><optgroup label="Procesejer">${db.procesejere.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup></select>
-        <span class="ull">Leder</span><select onchange="db.unitsUdd[${i}].sl=this.value;scheduleSave()"><option value=""${!x.sl?' selected':''}>— vælg leder (driftsejer)</option>${db.driftejere.map(k=>opt(k.id,uLeaderName(k.id),x.sl)).join('')}</select>
-      </div>`:'';
-      return `<div class="editline ${cls}">${nameInput(reg,i,'name',x.name,` placeholder="${esc(cfg.placeholder)}"`)}${moveSel(x,i)}<span class="em">${used} delpr.</span>${ordered?mvBtns(pos===0,pos===n-1,`${mvFn}('${reg}',${i}`):''}${delBtn(used,'Bruges i delprocesser',`removeReg('${reg}',${i})`)}</div>${leders}`;};
+      const isOwner=OWNER_REGS.includes(reg),navn=isOwner?navnOpslag[x.id]:null;
+      const nameCell=isOwner?`<div class="editname${navn?'':' tom'}">${navn?`<span class="avatar" style="width:18px;height:18px;font-size:8px;flex:none">${initials(navn)}</span>${esc(navn)}`:'<span title="Navnet vises, når navnearket er indlæst">—</span>'}</div>`:'';
+      const row=`<div class="editline ${cls}${isOwner?' owner':''}">${nameCell}${nameInput(reg,i,'name',x.name,` placeholder="${esc(cfg.placeholder)}"`)}${moveSel(x,i)}<span class="em">${used} delpr.</span>${ordered?mvBtns(pos===0,pos===n-1,`${mvFn}('${reg}',${i}`):''}${delBtn(used,'Bruges i delprocesser',`removeReg('${reg}',${i})`)}</div>`;
+      if(reg!=='unitsUdd')return row;
+      const leders=`<div class="unitleders">
+        <div class="ulf"><span class="ull">Chef</span><select onchange="db.unitsUdd[${i}].uc=this.value;scheduleSave()"><option value=""${!x.uc?' selected':''}>— vælg chef</option><optgroup label="Uddannelseschefer (AL UDD)">${db.aludd.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup><optgroup label="Procesejer">${db.procesejere.map(k=>opt(k.id,uLeaderName(k.id),x.uc)).join('')}</optgroup></select></div>
+        <div class="ulf"><span class="ull">Leder</span><select onchange="db.unitsUdd[${i}].sl=this.value;scheduleSave()"><option value=""${!x.sl?' selected':''}>— vælg leder (driftsejer)</option>${db.driftejere.map(k=>opt(k.id,uLeaderName(k.id),x.sl)).join('')}</select></div>
+      </div>`;
+      return `<div class="unitcard">${row}${leders}</div>`;};
     let rows='';
     if(isChild&&ordered){
       /* underregister med rækkefølge (arbejdsfællesskaber): grupperet under det overordnede, som hovedprocesser under procesområder */
@@ -1648,9 +1658,10 @@ function renderSettings(){
       : HINTS[reg]||(isUnit
       ? 'Dropdownen flytter enheden til et andet enhedsregister; alle delprocesser følger med. Konsulteres (C) og Informeres (I) kan vælge frit på tværs af de tre enhedsregistre.'
       : 'Bruges på delprocesserne og som niveau i Tvær-visningen.');
-    const vdBlock=reg==='unitsUdd'?`<div class="unitleders" style="margin:0 0 12px;padding-left:0">
-        <span class="ull">Vicedirektør</span><select onchange="db.ledelse.vd=this.value;scheduleSave()"><option value=""${!db.ledelse.vd?' selected':''}>— vælg vicedirektør (AL UDD)</option>${db.aludd.map(k=>opt(k.id,uLeaderName(k.id),db.ledelse.vd)).join('')}</select>
-      </div>`:'';
+    const vdBlock=reg==='unitsUdd'?`<div class="unitcard vdcard"><div class="unitleders" style="margin-top:0">
+        <div class="ulf"><span class="ull">Vicedirektør (AL UDD) — vises i landskabets header</span><select onchange="db.ledelse.vd=this.value;scheduleSave()"><option value=""${!db.ledelse.vd?' selected':''}>— vælg vicedirektør</option>${db.aludd.map(k=>opt(k.id,uLeaderName(k.id),db.ledelse.vd)).join('')}</select></div>
+        <div></div>
+      </div></div>`:'';
     const unitHint=reg==='unitsUdd'?' Chef vælges blandt AL UDD (uddannelseschefer) og Procesejer, leder blandt Driftsejer; de vises i enhedens opgaveoverblik. Vicedirektøren og enhedernes chefer vises i landskabets header.':'';
     body=vdBlock+(rows||`<div style="font-size:13px;color:var(--faint);padding:6px 0">Ingen ${esc(cfg.label.toLowerCase())} endnu.</div>`)
       +`<button class="addlink" onclick="addReg('${reg}')">+ Tilføj ${esc(cfg.one)}</button>`+hintBox(hint+unitHint+(ordered?' Pilene styrer rækkefølgen — den bruges i visninger, filtre og dropdowns.':''));
@@ -1863,7 +1874,8 @@ function renderLedelse(){
   const el=$('ledelse');if(!el)return;
   const L=db.ledelse||{};
   const vd=idNames(L.vd);
-  const ucIds=[...(db.aludd||[]),...(db.procesejere||[])].filter(pe=>(db.unitsUdd||[]).some(x=>x.uc===pe.id)).map(pe=>pe.id);
+  /* kun AL UDD (uddannelseschefer) vises i headeren — chefer valgt fra Procesejer holdes ude */
+  const ucIds=(db.aludd||[]).filter(pe=>(db.unitsUdd||[]).some(x=>x.uc===pe.id)).map(pe=>pe.id);
   const uc=idNames(ucIds.join(','));
   el.innerHTML=`<div><b>Vicedirektør</b> · ${vd?esc(vd):'Uddannelsesadministrationen'}</div>
     <div><b>Uddannelseschefer</b> · ${uc?esc(uc):'Nørre, Søndre og Frb+'}</div>`;
