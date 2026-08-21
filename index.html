@@ -307,7 +307,9 @@
   .maincard.subcard{margin:9px 12px;box-shadow:none;border:1px solid var(--line);background:#fff}
   .maincard.subcard .mhead{padding:9px 12px}
   .maincard.subcard .mtitle{font-size:13.5px}
-  .sublink{color:var(--wine);cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-weight:500}
+  .infobtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:-3px;margin-left:7px;width:19px;height:19px;padding:0;border:0;border-radius:50%;background:none;color:var(--faint);cursor:pointer}
+  .infobtn svg{width:16px;height:16px}
+  .infobtn:hover{color:var(--wine)}
   .usubfoot{padding:2px 14px 10px}
   .usubfoot .addlink{margin-top:0}
   .usubblock{border-top:1px solid var(--line)}
@@ -2260,7 +2262,7 @@ function uRenderPlanList(){
   const subBlock=srow=>{
     const ts=uTasks(srow.id).filter(t=>!anyF||uMatch(t));
     const aav=ts.reduce((a,t)=>a+uTaskAAV(t),0);
-    const meta=`${plural(ts.length,'opgave','opgaver')}${aav?' · '+fmtAAV(aav):''} · <span class="sublink" onclick="event.stopPropagation();openDrawer('${jsq(srow.id)}')" title="Kapabilitet, lederteam, RACI m.m. fra landskabet">Vis landskabsinfo</span>`;
+    const meta=`${plural(ts.length,'opgave','opgaver')}${aav?' · '+fmtAAV(aav):''}<button class="infobtn" onclick="event.stopPropagation();openDrawer('${jsq(srow.id)}')" title="Delprocessens oplysninger fra landskabet — kapabilitet, lederteam, RACI m.m." aria-label="Vis landskabsinfo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none"/></svg></button>`;
     const rows=(ts.length?colhead+ts.map(taskRow).join(''):`<div class="usubempty">Ingen opgaver endnu${uCanEdit()?' — brug <b>+ Ny opgave</b>':''}.</div>`)
       +(uCanEdit()?`<div class="usubfoot"><button class="addlink" onclick="uNewTask('${jsq(srow.id)}')">+ Ny opgave</button></div>`:'');
     return mainCard(anyF||uState.openSubs.has(srow.id),`uToggleSub('${jsq(srow.id)}')`,srow.title,meta,'',rows,'',' subcard');
