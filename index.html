@@ -304,6 +304,12 @@
   .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
   .ucolhead,.uoprow{display:grid;grid-template-columns:26px 1.9fr 1fr .85fr .6fr .6fr 18px;gap:12px;align-items:center}
   .ucolhead{padding:8px 16px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  .maincard.subcard{margin:9px 12px;box-shadow:none;border:1px solid var(--line)}
+  .maincard.subcard .mhead{padding:9px 12px}
+  .maincard.subcard .mtitle{font-size:13.5px}
+  .sublink{color:var(--wine);cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-weight:500}
+  .usubfoot{padding:2px 14px 10px}
+  .usubfoot .addlink{margin-top:0}
   .usubblock{border-top:1px solid var(--line)}
   .usubblock:first-child{border-top:0}
   .usubhead{display:flex;align-items:center;gap:10px;padding:10px 14px 3px}
@@ -2046,7 +2052,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();close
    via navnearket (samme ark som procesejere/driftsejere).
    ============================================================ */
 let enhedOpen=null,unitDb={},unitSnap={},uDrawerTask=null,uEditBuf=null;
-let uState={view:'plan',openAreas:new Set(),openMains:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+let uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
 const UNIT_STATUS=[{v:'aktiv',l:'Aktiv'},{v:'planlagt',l:'Planlagt'},{v:'inaktiv',l:'Inaktiv'}];
 const MONTHS=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
 const monthToWeek=m=>Math.round((m-1)*52/12)+1;
@@ -2159,7 +2165,7 @@ async function openEnhed(uid){
   if(regOf(uid)!=='unitsUdd')return;
   closeDrawer();closeSettings();closeLog();
   enhedOpen=uid;
-  uState={view:'plan',openAreas:new Set(),openMains:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+  uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
   const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
   if(tb)tb.style.display='none';if(seg)seg.style.display='none';
   const ti=$('app-title'),le=$('ledelse');
@@ -2226,6 +2232,7 @@ function uMatch(t){
 }
 function uToggleArea(id){uState.openAreas.has(id)?uState.openAreas.delete(id):uState.openAreas.add(id);render();}
 function uToggleMain(id){uState.openMains.has(id)?uState.openMains.delete(id):uState.openMains.add(id);render();}
+function uToggleSub(id){uState.openSubs.has(id)?uState.openSubs.delete(id):uState.openSubs.add(id);render();}
 function uAvatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`;show.forEach(id=>s+=`<span class="avatar" title="${esc(umName(id))}">${initials(umName(id))}</span>`);if(ids.length>4)s+=`<span class="avatar more">+${ids.length-4}</span>`;return s+`</div>`;}
 function uRenderPlanList(){
   const uid=enhedOpen;
@@ -2253,10 +2260,10 @@ function uRenderPlanList(){
   const subBlock=srow=>{
     const ts=uTasks(srow.id).filter(t=>!anyF||uMatch(t));
     const aav=ts.reduce((a,t)=>a+uTaskAAV(t),0);
-    return `<div class="usubblock">
-      <div class="usubhead"><span class="usubtitle link" onclick="openDrawer('${jsq(srow.id)}')" title="Vis delprocessens oplysninger fra landskabet (kapabilitet, lederteam, RACI m.m.)">${esc(srow.title)}</span><span class="usubsub">${plural(ts.length,'opgave','opgaver')}${aav?' · '+fmtAAV(aav):''}</span>${uCanEdit()?`<button class="addlink" onclick="uNewTask('${jsq(srow.id)}')">+ Ny opgave</button>`:''}</div>
-      ${ts.length?colhead+ts.map(taskRow).join(''):`<div class="usubempty">Ingen opgaver endnu${uCanEdit()?' — brug <b>+ Ny opgave</b>':''}.</div>`}
-    </div>`;
+    const meta=`${plural(ts.length,'opgave','opgaver')}${aav?' · '+fmtAAV(aav):''} · <span class="sublink" onclick="event.stopPropagation();openDrawer('${jsq(srow.id)}')" title="Kapabilitet, lederteam, RACI m.m. fra landskabet">Vis landskabsinfo</span>`;
+    const rows=(ts.length?colhead+ts.map(taskRow).join(''):`<div class="usubempty">Ingen opgaver endnu${uCanEdit()?' — brug <b>+ Ny opgave</b>':''}.</div>`)
+      +(uCanEdit()?`<div class="usubfoot"><button class="addlink" onclick="uNewTask('${jsq(srow.id)}')">+ Ny opgave</button></div>`:'');
+    return mainCard(anyF||uState.openSubs.has(srow.id),`uToggleSub('${jsq(srow.id)}')`,srow.title,meta,'',rows,'',' subcard');
   };
   let h='';
   areasShown.forEach(a=>{
