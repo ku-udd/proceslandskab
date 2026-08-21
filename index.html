@@ -318,6 +318,7 @@
   .infobtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px;margin-right:7px;width:21px;height:21px;padding:0;border:0;border-radius:50%;background:none;color:var(--wine);cursor:pointer}
   .infobtn svg{width:18px;height:18px}
   .infobtn:hover{background:var(--wine);color:#fff}
+  .udatawrap{position:relative}
   .usubfoot{padding:2px 14px 10px}
   .usubfoot .addlink{margin-top:0}
   .usubblock{border-top:1px solid var(--line)}
@@ -2044,7 +2045,7 @@ evt('login-email','keydown',e=>{if(e.key==='Enter')$('login-pass').focus();});
 const dataMenu=$('data-menu');
 evt('btn-data','click',e=>{e.stopPropagation();dataMenu.classList.toggle('open');});
 function closeMenu(){dataMenu.classList.remove('open');}
-document.addEventListener('click',()=>{closeMenu();closeFilterPanels(true);listCloseColMenu();});
+document.addEventListener('click',()=>{closeMenu();uCloseMenu();closeFilterPanels(true);listCloseColMenu();});
 evt('scrim','click',closeDrawer);
 evt('settings','click',e=>{if(e.target.id==='settings')closeSettings();});
 evt('logmodal','click',e=>{if(e.target.id==='logmodal')closeLog();});
@@ -2193,6 +2194,7 @@ function closeEnhed(){
   render();
 }
 function uSetView(v){uState.view=v;render();}
+function uCloseMenu(){const m=$('u-data-menu');if(m)m.classList.remove('open');}
 
 /* ---------- enhedens side ---------- */
 function renderEnhedPage(){
@@ -2224,10 +2226,16 @@ function renderEnhedPage(){
     <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
     <select onchange="uState.filters.status=this.value;render()"><option value="">Alle statusser</option>${UNIT_STATUS.map(s=>opt(s.v,s.l,f.status)).join('')}</select>
     <span class="spacer"></span>
-    ${uCanEdit()?`<button class="btn" onclick="uOpenSettings()">Struktur & personer</button>`:''}
-    <button class="btn" onclick="uExportXLSX()">Eksportér Excel</button>
-    ${uCanEdit()?`<button class="btn" onclick="$('u-import-xlsx').click()">Importér Excel</button>`:''}
-    <button class="btn" onclick="uOpenLog()">Seneste ændringer</button>
+    <div class="udatawrap">
+      <button class="btn" onclick="event.stopPropagation();$('u-data-menu').classList.toggle('open')">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu" id="u-data-menu">
+        ${uCanEdit()?`<button onclick="uCloseMenu();uOpenSettings()">Teams og medarbejdere</button><div class="sep"></div>`:''}
+        <button onclick="uCloseMenu();uExportXLSX()">Eksportér til Excel (.xlsx)</button>
+        ${uCanEdit()?`<button onclick="uCloseMenu();$('u-import-xlsx').click()">Importér fra Excel (.xlsx)</button>`:''}
+        <div class="sep"></div>
+        <button onclick="uCloseMenu();uOpenLog()">Seneste ændringer</button>
+      </div>
+    </div>
     <input type="file" id="u-import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="if(this.files[0])uImportXLSX(this.files[0]);this.value=''">
   </div>
   <div class="kpis">
@@ -2558,7 +2566,7 @@ function uRenderPeopleEdit(){
     </div>`;});
   const avail=curUnit().members.filter(p=>!seen.has(p.id));
   h+=`<select class="ppladd" onchange="uPplAdd(this.value);this.value=''"><option value="">+ Tilføj medarbejder…</option>${uTeamOptions(avail)}</select>`;
-  if(!curUnit().members.length)h+=`<div style="font-size:12px;color:var(--faint);margin-top:6px">Der er ingen medarbejdere endnu — opret dem under <b>Struktur & personer</b>.</div>`;
+  if(!curUnit().members.length)h+=`<div style="font-size:12px;color:var(--faint);margin-top:6px">Der er ingen medarbejdere endnu — opret dem under <b>Data → Teams og medarbejdere</b>.</div>`;
   $('u-people-edit').innerHTML=h;
 }
 function uPersonRole(id){const r=uEditBuf.raci;return r.A.includes(id)?'A':r.R.includes(id)?'R':r.C.includes(id)?'C':r.I.includes(id)?'I':'';}
@@ -2633,7 +2641,7 @@ function uRenderSettings(){
       <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Skriv KUN funktion eller initialer — aldrig navne. Navne vises kun, når navnearket er indlæst via landskabets <em>Data → Indlæs navne (Excel)</em>, og gemmes ikke i databasen. Medarbejderens ID (til navnearket) ses i Excel-eksporten.</div>`;
   }
   const tab=(id,label)=>`<button class="${uState.settingsTab===id?'on':''}" onclick="uState.settingsTab='${id}';uRenderSettings()">${label}</button>`;
-  $('settings').innerHTML=modalBox('Struktur & personer · '+esc(anyName(enhedOpen)),'uCloseSettings()',`<div class="tabbar">
+  $('settings').innerHTML=modalBox('Teams og medarbejdere · '+esc(anyName(enhedOpen)),'uCloseSettings()',`<div class="tabbar">
       ${tab('people',`Medarbejdere (${u.members.length})`)}${tab('teams',`Teams (${u.teams.length})`)}
     </div><div class="mbody">${body}</div>`);
 }
