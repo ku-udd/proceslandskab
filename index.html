@@ -440,10 +440,7 @@
       <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
       <h1 id="app-title">Proceslandskab</h1>
     </div>
-    <div class="ledelse" id="ledelse">
-        <div><b>Vicedirektør</b> · Uddannelsesadministrationen</div>
-        <div><b>Uddannelseschefer</b> · Nørre, Søndre og Frb+</div>
-      </div>
+    <div class="ledelse" id="ledelse"></div>
     <div class="headrow">
       <span class="savestat" id="savestat" aria-live="polite"></span>
       <button class="btn" id="btn-auth">Log ind</button>
@@ -617,6 +614,7 @@ function landRows(){
     mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i})),
     subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i})),
     registry:reg,
+    landskab_settings:[{id:'ls',vd:(db.ledelse&&db.ledelse.vd)||null,uc:(db.ledelse&&db.ledelse.uc)||null}],
     landskab_log:(db.log||[]).map(e=>({id:e.id,t:e.t,who:e.who||null,msg:e.msg}))
   };
 }
@@ -651,6 +649,7 @@ async function loadDb(){
       const names=['areas','mains','subs','registry','landskab_log'];
       const res=await Promise.all(names.map(t=>sb.from(t).select('*').order(t==='landskab_log'?'t':'pos',{ascending:true})));
       for(const r of res)if(r.error)throw r.error;
+      const ls=await sb.from('landskab_settings').select('*');
       const [ar,mn,su,rg,lg]=res.map(r=>r.data||[]);
       const nd={
         areas:ar.map(x=>({id:x.id,name:x.name})),
@@ -660,6 +659,8 @@ async function loadDb(){
       };
       REG_KEYS.forEach(r=>nd[r]=[]);
       rg.forEach(x=>{if(!nd[x.reg])return;const o=REGS[x.reg]&&REGS[x.reg].parent?{id:x.id,name:x.name,parent:x.parent||''}:{id:x.id,name:x.name};if(x.reg==='unitsUdd'){o.sl=x.section_leader||'';o.uc=x.education_chief||'';}nd[x.reg].push(o);});
+      const lsr=(!ls.error&&ls.data&&ls.data[0])||null;
+      nd.ledelse={vd:(lsr&&lsr.vd)||'',uc:(lsr&&lsr.uc)||''};
       db=nd;loaded=true;
     }catch(e){console.warn('Kunne ikke hente fra Supabase:',e);}
     await loadPlanIndex();
@@ -725,6 +726,8 @@ function syncChild(s,field,val){const c=CHILD_OF[field];if(!c)return;const x=db[
 
 function normalizeDb(){
   ['areas','mains','subs',...REG_KEYS,'log'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+  if(!db.ledelse||typeof db.ledelse!=='object')db.ledelse={vd:'',uc:''};
+  ['vd','uc'].forEach(k=>{if(typeof db.ledelse[k]!=='string')db.ledelse[k]='';});
   db.subs.forEach(s=>{
     if(!s.roles||typeof s.roles!=='object')s.roles={};
     ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});
@@ -1552,13 +1555,17 @@ function renderSettings(){
         return `<div class="editline main">${nameInput('mains',i,'title',mn.title)}<select onchange="setMainArea(${i},this.value)">${db.areas.map(x=>opt(x.id,x.name,mn.area)).join('')}</select>${mvBtns(idx===0,idx===arr.length-1,`moveMain('${mn.id}'`)}${delBtn(subsOfMain(mn.id).length,'Har delprocesser',`removeMain('${mn.id}')`)}</div>`;}).join('')
     ).join('')+`<button class="addlink" onclick="addMain()">+ Tilføj hovedproces</button>`;
   }else if(settingsTab==='ledelse'){
-    const fld=(i,label,prop,val,ph)=>`<label style="display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:7px 0 3px">${label}</label>
-      <input type="text" style="width:100%;font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;background:var(--surface)" value="${esc(val)}" oninput="db.unitsUdd[${i}].${prop}=this.value.trim();scheduleSave()" placeholder="${ph}">
-      <div style="font-size:11.5px;color:var(--muted);margin-top:3px;min-height:1em">${val?(navnOpslag[val]?'Vises som: <b>'+esc(navnOpslag[val])+'</b>':'Ingen match i navnearket — id\'et vises, som det står'):''}</div>`;
-    body=db.unitsUdd.map((x,i)=>grpHead(x.name,REGS.unitsUdd.color)
+    const fldRaw=(label,val,set,ph)=>`<label style="display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:7px 0 3px">${label}</label>
+      <input type="text" style="width:100%;font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;background:var(--surface)" value="${esc(val)}" oninput="${set};scheduleSave()" placeholder="${ph}">
+      <div style="font-size:11.5px;color:var(--muted);margin-top:3px;min-height:1em">${val?(idNames(val)!==val?'Vises som: <b>'+esc(idNames(val))+'</b>':'Ingen match i navnearket — id\'et vises, som det står'):''}</div>`;
+    const fld=(i,label,prop,val,ph)=>fldRaw(label,val,`db.unitsUdd[${i}].${prop}=this.value.trim()`,ph);
+    body=grpHead('Uddannelsesadministrationen','var(--wine)')
+      +fldRaw('Vicedirektør (ID fra fanen Navne)',db.ledelse.vd,`db.ledelse.vd=this.value.trim()`,'Fx VD-01')
+      +fldRaw('Uddannelseschefer (ID\'er fra fanen Navne — adskil med komma)',db.ledelse.uc,`db.ledelse.uc=this.value.trim()`,'Fx UC-01, UC-02, UC-03')
+      +db.unitsUdd.map((x,i)=>grpHead(x.name,REGS.unitsUdd.color)
       +fld(i,'Uddannelseschef (ID fra fanen Navne)','uc',x.uc||'','ID fra fanen Navne')
       +fld(i,'Sektionsleder (ID fra fanen Navne)','sl',x.sl||'','ID fra fanen Navne — fx DE-17')).join('')
-      +hintBox('Skriv ID\'et fra navnearket — aldrig navnet. Navnet vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen. Ledelsen vises i enhedens opgaveoverblik.');
+      +hintBox('Skriv ID\'et fra navnearket — aldrig navnet. Navne vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen. Vicedirektør og uddannelseschefer vises i landskabets header; enhedens ledelse vises i enhedens opgaveoverblik.');
   }else if(REGS[settingsTab]){
     const reg=settingsTab,cfg=REGS[reg],isUnit=cfg.kind==='unit',isChild=!!cfg.parent,pOne=isChild?REGS[cfg.parent].one:'';
     const moveSel=(x,i)=>isUnit?`<select title="Flyt til andet enhedsregister" onchange="moveReg('${reg}',${i},this.value)">${UNIT_REGS.map(r=>opt(r,REGS[r].label,reg)).join('')}</select>`
@@ -1602,7 +1609,7 @@ function renderSettings(){
   m.innerHTML=modalBox('Struktur & organisation','closeSettings()',`<div class="tabbar">
       ${tab('areas',`Procesområder (${db.areas.length})`)}${tab('mains',`Hovedprocesser (${db.mains.length})`)}
       ${regTabs(['kapabiliteter','delkapabiliteter'])}<div class="brk"></div>
-      ${regTabs(UNIT_REGS)}<button class="${settingsTab==='ledelse'?'on':''}" onclick="settingsTab='ledelse';renderSettings()">Ledelse pr. enhed</button><div class="brk"></div>
+      ${regTabs(UNIT_REGS)}<button class="${settingsTab==='ledelse'?'on':''}" onclick="settingsTab='ledelse';renderSettings()">Ledelse</button><div class="brk"></div>
       ${regTabs(['procesejere','driftejere'])}<div class="brk"></div>
       ${regTabs(['leaderteams','workgroups'])}
     </div>
@@ -1797,6 +1804,13 @@ function importNavne(file){
       if(drawerId&&!editBuf)renderDrawerView();else if(editBuf)renderRolesEdit();
   },err=>'Kunne ikke læse navnearket ('+err.message+'). Alle faner med kolonnerne ID og Navn læses — tjek at mindst én findes.');
 }
+function renderLedelse(){
+  const el=$('ledelse');if(!el)return;
+  const L=db.ledelse||{};
+  const vd=idNames(L.vd),uc=idNames(L.uc);
+  el.innerHTML=`<div><b>Vicedirektør</b> · ${vd?esc(vd):'Uddannelsesadministrationen'}</div>
+    <div><b>Uddannelseschefer</b> · ${uc?esc(uc):'Nørre, Søndre og Frb+'}</div>`;
+}
 function renderNavnStatus(){
   const el=$('navnstat'),btn=$('btn-navne');
   if(!el)return;
@@ -1894,6 +1908,7 @@ async function logout(){
 let currentView='landskab';
 const VIEWS={landskab:renderLandskab,matrix:renderMatrix,liste:renderListe,enhed:renderEnhed};
 function render(){
+  renderLedelse();
   if(enhedOpen){renderEnhedPage();return;}
   buildFilters();
   /* Liste: husk scroll-position, så tabellen ikke hopper ved hver ændring */
@@ -2006,6 +2021,7 @@ const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--war
 function blankUnit(){return {members:[],teams:[],plans:{},log:[]};}
 /* ledere gemmes som ID — navnet slås op i navnearket (fallback: id'et/teksten selv) */
 const uLeaderName=id=>id?(navnOpslag[id]||id):'';
+const idNames=v=>String(v||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean).map(id=>navnOpslag[id]||id).join(', ');
 const curUnit=()=>unitDb[enhedOpen]||blankUnit();
 const uCanEdit=()=>canEditEnhed(enhedOpen);
 const newUid=p=>p+Date.now().toString(36)+Math.floor(Math.random()*1e4);
