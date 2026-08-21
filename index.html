@@ -310,6 +310,7 @@
   .infobtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px;margin-right:7px;width:21px;height:21px;padding:0;border:0;border-radius:50%;background:none;color:var(--wine);cursor:pointer}
   .infobtn svg{width:18px;height:18px}
   .infobtn:hover{background:var(--wine);color:#fff}
+  .editname{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:-3px 0 7px 2px}
   .usubfoot{padding:2px 14px 10px}
   .usubfoot .addlink{margin-top:0}
   .usubblock{border-top:1px solid var(--line)}
@@ -2616,7 +2617,7 @@ function uRenderSettings(){
   }else{
     const topt=p=>`<option value=""${!p.team?' selected':''}>Intet team</option>`+u.teams.map(t=>opt(t.id,t.name,p.team)).join('');
     const personRow=p=>{const i=u.members.findIndex(x=>x.id===p.id);const used=u.tasks.some(tk=>uInvolved(tk).includes(p.id)||(tk.resources||[]).some(r=>r.e===p.id));
-      return `<div class="editline person"><input type="text" value="${esc(p.name)}" oninput="curUnit().members[${i}].name=this.value;uScheduleSave()" placeholder="Funktion/initialer — IKKE navn"><select title="Team" onchange="curUnit().members[${i}].team=this.value;saveUnit();uRenderSettings();render()">${topt(p)}</select><input type="number" step="0.01" min="0" value="${p.capacity==null?1:p.capacity}" oninput="curUnit().members[${i}].capacity=+this.value||0;uScheduleSave()" title="Kapacitet i ÅV (fuldtid = 1,0)"><button class="iconbtn" ${used?'disabled title="Bruges i opgaver"':''} onclick="uRemovePerson(${i})">×</button></div>`;};
+      return `<div class="editline person"><input type="text" value="${esc(p.name)}" oninput="curUnit().members[${i}].name=this.value;uScheduleSave()" placeholder="Funktion/initialer — IKKE navn"><select title="Team" onchange="curUnit().members[${i}].team=this.value;saveUnit();uRenderSettings();render()">${topt(p)}</select><input type="number" step="0.01" min="0" value="${p.capacity==null?1:p.capacity}" oninput="curUnit().members[${i}].capacity=+this.value||0;uScheduleSave()" title="Kapacitet i ÅV (fuldtid = 1,0)"><button class="iconbtn" ${used?'disabled title="Bruges i opgaver"':''} onclick="uRemovePerson(${i})">×</button></div>${navnOpslag[p.id]?`<div class="editname"><span class="avatar" style="width:16px;height:16px;font-size:8px">${initials(navnOpslag[p.id])}</span>${esc(navnOpslag[p.id])}</div>`:''}`;};
     const groupHdr=(name,n)=>`<div style="font-family:Spectral;font-weight:600;font-size:14px;margin:16px 0 4px;color:var(--ink)">${esc(name)} <span style="font-weight:400;color:var(--faint);font-size:12px">· ${n}</span></div>`;
     body='';
     u.teams.forEach(t=>{const ppl=u.members.filter(p=>p.team===t.id);body+=groupHdr(t.name,ppl.length)+(ppl.length?ppl.map(personRow).join(''):`<div style="font-size:12.5px;color:var(--faint);padding:4px 0">Ingen medarbejdere i dette team endnu.</div>`);});
