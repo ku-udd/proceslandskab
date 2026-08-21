@@ -502,8 +502,8 @@
    (landskabet) og unit_* (enhedernes opgaveoverblik). Gemmes automatisk; localStorage er kun offline-nødkopi. Registrene procesejere/driftejere indeholder KUN id + funktion —
    aldrig navne. Navne indlæses fra et Excel-ark og lever kun i hukommelsen (navnOpslag).
    ============================================================ */
-const SUPABASE_URL='https://lwejqapnzkoldqyxunyk.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3ZWpxYXBuemtvbGRxeXh1bnlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3NzA2NjIsImV4cCI6MjEwMjM0NjY2Mn0.G3TZzgTNim8SZX5Q8ZxmlFnpiMSklPfEahEpRTZ1cd4';
+const SUPABASE_URL='https://fyycodrruflnnhnyzgwv.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5eWNvZHJydWZsbm5obnl6Z3d2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyOTcyNzgsImV4cCI6MjEwMjg3MzI3OH0.fHjIdorIWtU7Vc3dcHf6Qe32GBfVixFFZ7A8U1FR9ls';
 const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 const sbConfigured=()=>SUPABASE_URL.startsWith('https://')&&!SUPABASE_URL.includes('DIT-PROJEKT')&&!SUPABASE_ANON_KEY.includes('INDSAET');
 
