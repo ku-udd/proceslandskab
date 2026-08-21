@@ -306,7 +306,7 @@
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
   .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px 17px;box-shadow:var(--shadow)}
   .kpi .v{font-family:'Spectral',serif;font-size:26px;font-weight:600;letter-spacing:-.01em}
-  .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .num{font-variant-numeric:tabular-nums}
   .emptyhint{color:var(--faint);font-size:12px}
   .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
@@ -2061,7 +2061,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();close
    via navnearket (samme ark som procesejere/driftsejere).
    ============================================================ */
 let enhedOpen=null,unitDb={},unitSnap={},uDrawerTask=null,uEditBuf=null;
-let uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+let uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:'',medarbejder:''},settingsTab:'people'};
 const UNIT_STATUS=[{v:'aktiv',l:'Aktiv'},{v:'planlagt',l:'Planlagt'},{v:'inaktiv',l:'Inaktiv'}];
 const MONTHS=['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
 const monthToWeek=m=>Math.round((m-1)*52/12)+1;
@@ -2176,7 +2176,7 @@ async function openEnhed(uid){
   if(regOf(uid)!=='unitsUdd')return;
   closeDrawer();closeSettings();closeLog();
   enhedOpen=uid;
-  uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:''},settingsTab:'people'};
+  uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:'',medarbejder:''},settingsTab:'people'};
   const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
   if(tb)tb.style.display='none';if(seg)seg.style.display='none';
   const ti=$('app-title'),le=$('ledelse');
@@ -2225,6 +2225,7 @@ function renderEnhedPage(){
     <span class="lab" style="font-size:12px;color:var(--faint);font-weight:500">Filtrér:</span>
     <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
     <select onchange="uState.filters.status=this.value;render()"><option value="">Alle statusser</option>${UNIT_STATUS.map(s=>opt(s.v,s.l,f.status)).join('')}</select>
+    <select onchange="uState.filters.medarbejder=this.value;render()"><option value=""${!f.medarbejder?' selected':''}>Alle medarbejdere</option>${(()=>{let h='';u.teams.forEach(t=>{const ps=u.members.filter(p=>p.team===t.id);if(ps.length)h+=`<optgroup label="${esc(t.name)}">${ps.map(p=>opt(p.id,umName(p.id),f.medarbejder)).join('')}</optgroup>`;});const none=u.members.filter(p=>!p.team||!uTeamById(p.team));if(none.length)h+=`<optgroup label="Uden team">${none.map(p=>opt(p.id,umName(p.id),f.medarbejder)).join('')}</optgroup>`;return h;})()}</select>
     <span class="spacer"></span>
     ${uCanEdit()?`<div class="udatawrap">
       <button class="btn" onclick="event.stopPropagation();$('u-data-menu').classList.toggle('open')">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -2252,6 +2253,7 @@ function uMatch(t){
   const f=uState.filters;
   if(f.team&&t.team!==f.team)return false;
   if(f.status&&t.status!==f.status)return false;
+  if(f.medarbejder&&!(uInvolved(t).includes(f.medarbejder)||(t.resources||[]).some(r=>r.e===f.medarbejder)))return false;
   return true;
 }
 function uToggleArea(id){uState.openAreas.has(id)?uState.openAreas.delete(id):uState.openAreas.add(id);render();}
@@ -2261,13 +2263,13 @@ function uAvatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`
 function uRenderPlanList(){
   const uid=enhedOpen;
   const allSubs=uSubs(uid);
-  const anyF=uState.filters.team||uState.filters.status;
+  const anyF=uState.filters.team||uState.filters.status||uState.filters.medarbejder;
   const andetAll=uTasks(U_ANDET);
   const andetTs=andetAll.filter(t=>!anyF||uMatch(t));
   const showAndet=anyF?!!andetTs.length:(andetAll.length||uCanEdit());
   if(!allSubs.length&&!showAndet)return `<div class="empty-state"><b>Ingen delprocesser endnu</b>Enheden vises her, når den er sat på som <em>Udførende (R - UDDADM)</em> på delprocesser i landskabet.</div>`;
   const subShown=allSubs.filter(s=>!anyF||uTasks(s.id).some(uMatch));
-  if(anyF&&!subShown.length&&!andetTs.length)return `<div class="empty-state"><b>Ingen opgaver matcher filtrene</b>Justér team- eller statusfilteret.</div>`;
+  if(anyF&&!subShown.length&&!andetTs.length)return `<div class="empty-state"><b>Ingen opgaver matcher filtrene</b>Justér team-, status- eller medarbejderfilteret.</div>`;
   const subIds=new Set(subShown.map(s=>s.id));
   const mainsShown=db.mains.filter(m=>subsOfMain(m.id).some(s=>subIds.has(s.id)));
   const areasShown=db.areas.filter(a=>mainsShown.some(m=>m.area===a.id));
