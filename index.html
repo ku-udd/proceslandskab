@@ -465,7 +465,7 @@
 
 <div class="app" id="app" style="display:none">
   <header class="top">
-    <button id="btn-navne" onclick="$('import-navne').click()" title="Indlæs navne (Excel) — navnearket fra Teams. Navnene lever kun i denne fane og gemmes aldrig."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.6" cy="10.4" r="1.9"/><path d="M5.6 15.8c.5-1.6 1.6-2.4 3-2.4s2.5.8 3 2.4"/><path d="M14.5 9.5H19M14.5 13h3"/></svg><span class="dot" id="navnstat-dot"></span></button>
+    <button id="btn-navne" onclick="$('import-navne').click()" title="Indlæs navne fra Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.6" cy="10.4" r="1.9"/><path d="M5.6 15.8c.5-1.6 1.6-2.4 3-2.4s2.5.8 3 2.4"/><path d="M14.5 9.5H19M14.5 13h3"/></svg><span class="dot" id="navnstat-dot"></span></button>
     <div class="headleft">
       <div class="brand">
         <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
@@ -1869,8 +1869,7 @@ function renderNavnStatus(){
   const btn=$('btn-navne');if(!btn)return;
   const n=Object.keys(navnOpslag).length;
   btn.classList.toggle('ok',!!n);
-  btn.title=n?`Navne indlæst — ${plural(n,'person','personer')} (kun i denne fane, gemmes ikke). Klik for at indlæse igen.`
-             :'Indlæs navne (Excel) — navnearket fra Teams. Indtil da vises funktioner. Navnene lever kun i denne fane og gemmes aldrig.';
+  btn.title='Indlæs navne fra Excel';
 }
 
 /* ============================================================
