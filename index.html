@@ -2223,8 +2223,8 @@ function renderEnhedPage(){
   </div>
   <div class="ubar">
     <span class="lab" style="font-size:12px;color:var(--faint);font-weight:500">Filtrér:</span>
-    <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
     <select onchange="uState.filters.status=this.value;render()"><option value="">Alle statusser</option>${UNIT_STATUS.map(s=>opt(s.v,s.l,f.status)).join('')}</select>
+    <select onchange="uState.filters.team=this.value;render()"><option value="">Alle teams</option>${u.teams.map(t=>opt(t.id,t.name,f.team)).join('')}</select>
     <select onchange="uState.filters.medarbejder=this.value;render()"><option value=""${!f.medarbejder?' selected':''}>Alle medarbejdere</option>${(()=>{let h='';u.teams.forEach(t=>{const ps=u.members.filter(p=>p.team===t.id);if(ps.length)h+=`<optgroup label="${esc(t.name)}">${ps.map(p=>opt(p.id,umName(p.id),f.medarbejder)).join('')}</optgroup>`;});const none=u.members.filter(p=>!p.team||!uTeamById(p.team));if(none.length)h+=`<optgroup label="Uden team">${none.map(p=>opt(p.id,umName(p.id),f.medarbejder)).join('')}</optgroup>`;return h;})()}</select>
     <span class="spacer"></span>
     ${uCanEdit()?`<div class="udatawrap">
@@ -2243,7 +2243,7 @@ function renderEnhedPage(){
   <div class="kpis">
     <div class="kpi"><div class="v">${kpiMains}<span style="color:var(--faint);font-weight:400"> / </span>${subs.length}<span style="color:var(--faint);font-weight:400"> / </span>${u.tasks.length}</div><div class="l">Hovedprocesser / Delprocesser / Opgaver</div></div>
     <div class="kpi"><div class="v">${u.members.length}</div><div class="l">Medarbejdere</div></div>
-    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}<span style="color:var(--faint);font-weight:400"> / </span>${fmtAAV(kpiCap)}</div><div class="l">Planlagt / Samlet ÅV</div></div>
+    <div class="kpi"><div class="v">${fmtAAV(kpiAAV).replace(' ÅV','')}<span style="color:var(--faint);font-weight:400"> / </span>${fmtAAV(kpiCap)}</div><div class="l">Planlagt / Samlet ÅV</div></div>
     <div class="kpi"><div class="v">${kpiBudget?fmtDKK(kpiBudget):'0 kr.'}</div><div class="l">Samlet budget</div></div>
   </div>`;
   h+=uState.view==='people'?uRenderPeople():uState.view==='tl'?uRenderTl():uRenderPlanList();
