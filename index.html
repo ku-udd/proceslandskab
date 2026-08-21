@@ -27,6 +27,14 @@
   #btn-auth{position:absolute;top:20px;right:22px;z-index:40;display:inline-flex;align-items:center;gap:6px;
     font-size:12px;padding:6px 11px;border-radius:999px}
   #btn-auth .ic{width:14px;height:14px}
+  #btn-navne{position:absolute;top:20px;right:118px;z-index:40;display:inline-flex;align-items:center;justify-content:center;
+    width:31px;height:31px;padding:0;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);
+    color:var(--muted);cursor:pointer}
+  #btn-navne svg{width:17px;height:17px}
+  #btn-navne:hover{color:var(--wine);border-color:var(--wine)}
+  #btn-navne .dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--over);border:2px solid var(--paper)}
+  #btn-navne.ok{color:var(--wine)}
+  #btn-navne.ok .dot{background:var(--ok)}
   .headrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-top:0}
   .headrow .savestat{margin-left:auto}
   .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--wine);font-weight:600}
@@ -457,6 +465,7 @@
 
 <div class="app" id="app" style="display:none">
   <header class="top">
+    <button id="btn-navne" onclick="$('import-navne').click()" title="Indlæs navne (Excel) — navnearket fra Teams. Navnene lever kun i denne fane og gemmes aldrig."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.6" cy="10.4" r="1.9"/><path d="M5.6 15.8c.5-1.6 1.6-2.4 3-2.4s2.5.8 3 2.4"/><path d="M14.5 9.5H19M14.5 13h3"/></svg><span class="dot" id="navnstat-dot"></span></button>
     <div class="headleft">
       <div class="brand">
         <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
@@ -486,9 +495,6 @@
       <div class="menu" id="data-menu">
         <button id="mi-export" onclick="exportXLSX()">Eksportér til Excel (.xlsx)</button>
         <button id="mi-import" onclick="$('import-xlsx').click()">Importér fra Excel (.xlsx)</button>
-        <div class="sep" id="sep-data"></div>
-        <button onclick="closeMenu();$('import-navne').click()" id="btn-navne">Indlæs navne (Excel)</button>
-        <div class="menustat" id="navnstat"></div>
         <div class="sep" id="sep-log"></div>
         <button onclick="closeMenu();openLog()" id="mi-log">Seneste ændringer</button>
         <div class="sep" id="sep-admin"></div>
@@ -1860,12 +1866,11 @@ function renderLedelse(){
     <div><b>Uddannelseschefer</b> · ${uc?esc(uc):'Nørre, Søndre og Frb+'}</div>`;
 }
 function renderNavnStatus(){
-  const el=$('navnstat'),btn=$('btn-navne');
-  if(!el)return;
+  const btn=$('btn-navne');if(!btn)return;
   const n=Object.keys(navnOpslag).length;
-  el.className='menustat'+(n?' ok':'');
-  el.textContent=n?`Navne indlæst — ${plural(n,'person','personer')} (kun i denne fane, gemmes ikke).`:'Navne ikke indlæst — hent navnearket fra Teams. Indtil da vises funktioner.';
-  if(btn)btn.textContent=n?'Indlæs navne igen (Excel)':'Indlæs navne (Excel)';
+  btn.classList.toggle('ok',!!n);
+  btn.title=n?`Navne indlæst — ${plural(n,'person','personer')} (kun i denne fane, gemmes ikke). Klik for at indlæse igen.`
+             :'Indlæs navne (Excel) — navnearket fra Teams. Indtil da vises funktioner. Navnene lever kun i denne fane og gemmes aldrig.';
 }
 
 /* ============================================================
