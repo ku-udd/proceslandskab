@@ -2193,8 +2193,13 @@ function renderEnhedPage(){
   const f=uState.filters;
   const kpiAAV=u.tasks.reduce((a,t)=>a+uTaskAAV(t),0);
   const kpiCap=u.members.reduce((a,m)=>a+(+m.capacity||0),0);
-  const kpiAktiv=u.tasks.filter(t=>t.status==='aktiv').length;
-  const segBtn=(v,label)=>`<button role="tab" aria-selected="${uState.view===v}" onclick="uSetView('${v}')">${label}</button>`;
+  const kpiMains=new Set(subs.map(x=>x.main)).size;
+  const kpiBudget=u.tasks.reduce((a,t)=>a+(+t.budget||0),0);
+  const SEG_IC={
+    plan:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3.5 5.5 4.7 7l2-2.6"/><path d="M3.5 11.5 4.7 13l2-2.6"/><path d="M3.5 17.5 4.7 19l2-2.6"/></svg>',
+    people:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c.7-3.4 3.2-5.2 6.2-5.2S14.5 16.6 15.2 20"/><circle cx="17" cy="9" r="2.6"/><path d="M16.2 14.9c2.6.2 4.4 1.8 5 5.1"/></svg>',
+    tl:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5.5h11M3 12h17M3 18.5h8"/><circle cx="17.5" cy="5.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="18.5" r="1.4" fill="currentColor" stroke="none"/></svg>'};
+  const segBtn=(v,label)=>`<button role="tab" aria-selected="${uState.view===v}" onclick="uSetView('${v}')">${SEG_IC[v]||''}${label}</button>`;
   let h=`<div class="uhead">
     <div>
       <h2>${esc(anyName(uid))}</h2>
@@ -2218,10 +2223,10 @@ function renderEnhedPage(){
     <input type="file" id="u-import-xlsx" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="if(this.files[0])uImportXLSX(this.files[0]);this.value=''">
   </div>
   <div class="kpis">
-    <div class="kpi"><div class="v">${kpiAktiv}<span style="color:var(--faint);font-weight:400"> / </span>${u.tasks.length}</div><div class="l">Aktive / opgaver</div></div>
+    <div class="kpi"><div class="v">${kpiMains}<span style="color:var(--faint);font-weight:400"> / </span>${subs.length}<span style="color:var(--faint);font-weight:400"> / </span>${u.tasks.length}</div><div class="l">Hovedprocesser / delprocesser / opgaver</div></div>
     <div class="kpi"><div class="v">${u.members.length}</div><div class="l">Medarbejdere</div></div>
-    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}</div><div class="l">Planlagt ÅV</div></div>
-    <div class="kpi"><div class="v">${fmtAAV(kpiCap)}</div><div class="l">Kapacitet</div></div>
+    <div class="kpi"><div class="v">${fmtAAV(kpiAAV)}<span style="color:var(--faint);font-weight:400"> / </span>${fmtAAV(kpiCap)}</div><div class="l">Planlagt ÅV / kapacitet</div></div>
+    <div class="kpi"><div class="v">${kpiBudget?fmtDKK(kpiBudget):'0 kr.'}</div><div class="l">Samlet budget</div></div>
   </div>`;
   h+=uState.view==='people'?uRenderPeople():uState.view==='tl'?uRenderTl():uRenderPlanList();
   $('view').innerHTML=h;
