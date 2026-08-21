@@ -985,7 +985,7 @@ function renderEnhed(){
     if(regOf(uid)==='unitsUdd'){
       /* UDD-enheder: klik åbner direkte enhedens opgaveoverblik */
       const nPlans=planCountFor(uid);
-      h+=branch(false,`openEnhed('${jsq(uid)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mine.length} delprocesser${nPlans?` · ${plural(nPlans,'opgave','opgaver')}`:''} · åbner opgaveoverblikket`,'');
+      h+=branch(false,`openEnhed('${jsq(uid)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mine.length} delprocesser${nPlans?` · ${plural(nPlans,'opgave','opgaver')}`:''}`,'');
     }else{
       h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,mainsBlock(mine,key,uid,force));
     }
