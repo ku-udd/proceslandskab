@@ -2081,7 +2081,9 @@ const TCOL=['#8A1C24','#2F6F8F','#4F7A4A','#C2891A','#7A5A8F','#B5623A','#3E6C6C
 const uTeamColor=id=>{const i=curUnit().teams.findIndex(t=>t.id===id);return i>=0?TCOL[i%TCOL.length]:'var(--faint)';};
 /* delprocesser hvor enheden er Udførende (R - UDDADM) — kun under dem kan enheden oprette opgaver */
 const uSubs=uid=>db.subs.filter(s=>roleIds(s,'RU').includes(uid));
-/* opgaver: enhedens eget niveau under delprocesserne — al planlægning sker her */
+/* opgaver: enhedens eget niveau under delprocesserne — al planlægning sker her.
+   Kategorien "Andet" (U_ANDET) er enhedens egen — den findes IKKE i landskabet. */
+const U_ANDET='__andet';
 function blankTask(sid){return {id:newUid('uo'),sub:sid,title:'',status:'aktiv',team:'',weeks:{},weekNotes:{},raci:{A:[],R:[],C:[],I:[]},resources:[],formaal:'',beskrivelse:'',mandat:'',budget:0,budgetNote:'',note:''};}
 const uTasks=sid=>curUnit().tasks.filter(t=>t.sub===sid);
 const uTaskById=tid=>curUnit().tasks.find(t=>t.id===tid)||null;
@@ -2244,10 +2246,13 @@ function uAvatarStack(ids){const show=ids.slice(0,4);let s=`<div class="stack">`
 function uRenderPlanList(){
   const uid=enhedOpen;
   const allSubs=uSubs(uid);
-  if(!allSubs.length)return `<div class="empty-state"><b>Ingen delprocesser endnu</b>Enheden vises her, når den er sat på som <em>Udførende (R - UDDADM)</em> på delprocesser i landskabet.</div>`;
   const anyF=uState.filters.team||uState.filters.status;
+  const andetAll=uTasks(U_ANDET);
+  const andetTs=andetAll.filter(t=>!anyF||uMatch(t));
+  const showAndet=anyF?!!andetTs.length:(andetAll.length||uCanEdit());
+  if(!allSubs.length&&!showAndet)return `<div class="empty-state"><b>Ingen delprocesser endnu</b>Enheden vises her, når den er sat på som <em>Udførende (R - UDDADM)</em> på delprocesser i landskabet.</div>`;
   const subShown=allSubs.filter(s=>!anyF||uTasks(s.id).some(uMatch));
-  if(!subShown.length)return `<div class="empty-state"><b>Ingen opgaver matcher filtrene</b>Justér team- eller statusfilteret.</div>`;
+  if(anyF&&!subShown.length&&!andetTs.length)return `<div class="empty-state"><b>Ingen opgaver matcher filtrene</b>Justér team- eller statusfilteret.</div>`;
   const subIds=new Set(subShown.map(s=>s.id));
   const mainsShown=db.mains.filter(m=>subsOfMain(m.id).some(s=>subIds.has(s.id)));
   const areasShown=db.areas.filter(a=>mainsShown.some(m=>m.area===a.id));
@@ -2286,6 +2291,14 @@ function uRenderPlanList(){
     }).join('');
     h+=branch(anyF||uState.openAreas.has(a.id),`uToggleArea('${jsq(a.id)}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser · ${plural(aTs.length,'opgave','opgaver')}${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
   });
+  /* "Andet": enhedens egne opgaver uden delproces — kategorien er ikke en del af landskabet */
+  if(showAndet){
+    const aAAV=andetTs.reduce((x,t)=>x+uTaskAAV(t),0);
+    const rows=(andetTs.length?colhead+andetTs.map(taskRow).join(''):`<div class="usubempty">Ingen opgaver endnu${uCanEdit()?' — brug <b>+ Ny opgave</b>':''}.</div>`)
+      +(uCanEdit()?`<div class="usubfoot"><button class="addlink" onclick="uNewTask('${U_ANDET}')">+ Ny opgave</button></div>`:'');
+    const inner=`<div class="maincard subcard open"><div class="mwrap">${rows}</div></div>`;
+    h+=branch(anyF||uState.openAreas.has(U_ANDET),`uToggleArea('${U_ANDET}')`,'var(--faint)','Andet',`enhedens egne opgaver uden delproces · ${plural(andetTs.length,'opgave','opgaver')}${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
+  }
   return h;
 }
 
@@ -2319,7 +2332,7 @@ function uRenderPeople(){
     [...mine].sort((a,b)=>((((b.resources||[]).find(r=>r.e===p.id))||{}).h||0)-((((a.resources||[]).find(r=>r.e===p.id))||{}).h||0)).forEach(t=>{
       const sub=db.subs.find(x=>x.id===t.sub);
       const ah=(((t.resources||[]).find(r=>r.e===p.id))||{}).h||0;
-      c+=`<span class="ptaska" onclick="uOpenTask('${jsq(t.id)}')" title="${sub?esc(sub.title):''}">${uRaciTag(t,p.id)}${ah?`<span class="ptaav">${fmtAAV(ah)}</span>`:''}${esc(t.title)}</span>`;});
+      c+=`<span class="ptaska" onclick="uOpenTask('${jsq(t.id)}')" title="${sub?esc(sub.title):(t.sub===U_ANDET?'Andet':'')}">${uRaciTag(t,p.id)}${ah?`<span class="ptaav">${fmtAAV(ah)}</span>`:''}${esc(t.title)}</span>`;});
     return c+`</div></div>`;
   };
   let h='';
@@ -2357,6 +2370,10 @@ function uRenderTl(){
       if(ts.length){groups.push({label:sub.title,items:ts.map(mapTask)});manualCount+=ts.length;}
     });
   }
+  if(uState.tlSel.has(U_ANDET)){
+    const ts=uTasks(U_ANDET).filter(t=>!covered.has(t.id));
+    if(ts.length){groups.push({label:'Andet',items:ts.map(mapTask)});manualCount+=ts.length;}
+  }
   const tot=covered.size+manualCount;
   const subParts=[];
   if(selPeople.length)subParts.push(`${selPeople.length} ${selPeople.length===1?'medarbejder':'medarbejdere'}`);
@@ -2388,7 +2405,7 @@ function uTlChart(title,w0,w1,groups,nowWeek,cols){
 }
 function uTlPanel(){
   const uid=enhedOpen,u=curUnit(),subs=uSubs(uid);
-  if(!subs.length)return `<div class="tl-panel"><div class="tl-panel-note">Der er ingen delprocesser endnu, hvor enheden er udførende (R).</div></div>`;
+  if(!subs.length&&!uTasks(U_ANDET).length)return `<div class="tl-panel"><div class="tl-panel-note">Der er ingen delprocesser endnu, hvor enheden er udførende (R).</div></div>`;
   /* et flueben på en delproces viser alle dens opgaver på tidslinjen */
   let h=`<div class="tl-panel">`;
   const empChk=p=>{const on=uState.tlPeople.has(p.id);return `<label class="tl-chk${on?' on':''}"><input type="checkbox" ${on?'checked':''} onchange="uTlPersonToggle('${jsq(p.id)}')"><span>${esc(umName(p.id))}<i class="tl-chk-n">${uPersonTasks(p.id).length}</i></span></label>`;};
@@ -2410,6 +2427,11 @@ function uTlPanel(){
       return `<div class="tl-pg"><div class="tl-pg-h tl-main-h">${esc(m.title)}<button class="tl-all" onclick="uTlSubsToggle('${jsq(m.id)}','main',${mOn?'false':'true'})">${mOn?'Fjern':'Vælg'}</button></div><div class="tl-pg-items">${ms.map(chk).join('')}</div></div>`;};
     h+=`<div class="tl-area"><div class="tl-area-h"><span class="dot" style="background:${areaColor(a.id)}"></span>${esc(a.name)}<button class="tl-all" onclick="uTlSubsToggle('${jsq(a.id)}','area',${allOn?'false':'true'})">${allOn?'Fjern alle':'Vælg alle'}</button></div>${mains.map(mainBlock).join('')}</div>`;
   });
+  const andet=uTasks(U_ANDET);
+  if(andet.length){
+    const on=uState.tlSel.has(U_ANDET);
+    h+=`<div class="tl-area"><div class="tl-area-h"><span class="dot" style="background:var(--faint)"></span>Andet<span style="font-weight:400;color:var(--faint)">· ${plural(andet.length,'opgave','opgaver')}</span><button class="tl-all" onclick="uTlToggle('${U_ANDET}')">${on?'Fjern':'Vælg'}</button></div></div>`;
+  }
   return h+`</div>`;
 }
 function uTlToggle(id){uState.tlSel.has(id)?uState.tlSel.delete(id):uState.tlSel.add(id);render();}
@@ -2432,15 +2454,16 @@ function uCloseDrawer(){setScrim(false);uDrawerTask=null;uEditBuf=null;}
 const uNotSet='<span class="v empty">Ikke udfyldt endnu.</span>';
 function uRenderDrawerView(){
   const t=uTaskById(uDrawerTask);if(!t)return uCloseDrawer();
-  const sdp=db.subs.find(x=>x.id===t.sub);if(!sdp)return uCloseDrawer();
-  const m=mainById(sdp.main),oid=m.area,col=areaColor(oid);
+  const isAndet=t.sub===U_ANDET;
+  const sdp=isAndet?null:db.subs.find(x=>x.id===t.sub);if(!isAndet&&!sdp)return uCloseDrawer();
+  const m=sdp?mainById(sdp.main):null,oid=m?m.area:null,col=oid?areaColor(oid):'var(--faint)';
   const inv=uInvolved(t),th=uTaskAAV(t);
   const emptyV=v=>v?esc(v):uNotSet;
   const racLine=(key,label,ids)=>!ids.length?'':`<div class="raci-line"><div class="rl-key"><b>${key}</b>${label}</div><div class="rl-people">${ids.map(id=>`<span class="pill"><span class="avatar" style="width:18px;height:18px;font-size:9px">${initials(umName(id))}</span>${esc(umName(id))}</span>`).join('')}</div></div>`;
   $('drawer').innerHTML=`
     <div class="dr-head">
       <button class="dr-close" onclick="uCloseDrawer()" aria-label="Luk">×</button>
-      <div class="crumb" style="color:${col}">${esc(area(oid).name)} · ${esc(m.title)} · <span class="link" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="openDrawer('${jsq(sdp.id)}')" title="Vis delprocessens oplysninger fra landskabet">${esc(sdp.title)}</span></div>
+      <div class="crumb" style="color:${col}">${isAndet?'Andet · enhedens egne opgaver':`${esc(area(oid).name)} · ${esc(m.title)} · <span class="link" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="openDrawer('${jsq(sdp.id)}')" title="Vis delprocessens oplysninger fra landskabet">${esc(sdp.title)}</span>`}</div>
       <h2>${esc(t.title)}</h2>
       <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
         <span class="pill">${statusDot(t.status)}${capFirst(t.status)}</span>
@@ -2472,12 +2495,13 @@ function uStartEdit(){
 }
 function uRenderDrawerEdit(){
   const t=uEditBuf;if(!t)return uCloseDrawer();
-  const sdp=db.subs.find(x=>x.id===t.sub);if(!sdp)return uCloseDrawer();
+  const isAndet=t.sub===U_ANDET;
+  const sdp=isAndet?null:db.subs.find(x=>x.id===t.sub);if(!isAndet&&!sdp)return uCloseDrawer();
   const u=curUnit(),isNew=!uTaskById(t.id);
   $('drawer').innerHTML=`
     <div class="dr-head">
       <button class="dr-close" onclick="uCancelEdit()" aria-label="Luk">×</button>
-      <div class="crumb" style="color:var(--wine)">${isNew?'Opretter opgave':'Redigerer opgave'} · ${esc(sdp.title)}</div>
+      <div class="crumb" style="color:var(--wine)">${isNew?'Opretter opgave':'Redigerer opgave'} · ${isAndet?'Andet':esc(sdp.title)}</div>
       <h2>${isNew?'Ny opgave':esc(t.title)}</h2>
       <div class="dr-actions">
         <button class="btn primary" onclick="uSaveTask()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Gem</button>
@@ -2541,16 +2565,17 @@ function uRenderWeekEdit(){if(!uEditBuf.weeks)uEditBuf.weeks={};if(!uEditBuf.wee
 function uSaveTask(){
   if(!uCanEdit())return uNoRights();
   const t=uEditBuf;if(!t)return;
-  const sdp=db.subs.find(x=>x.id===t.sub);if(!sdp)return;
+  const isAndet=t.sub===U_ANDET;
+  const sdp=isAndet?null:db.subs.find(x=>x.id===t.sub);if(!isAndet&&!sdp)return;
   t.title=String(t.title||'').trim()||'Opgave';
   t.resources=(t.resources||[]).map(r=>({e:r.e,h:Math.max(0.01,Math.round((+r.h||0.01)*100)/100)}));
   const u=curUnit();
   const i=u.tasks.findIndex(x=>x.id===t.id),isNew=i<0;
   const saved=normTask(clone(t));
   if(isNew)u.tasks.push(saved);else u.tasks[i]=saved;
-  (planIndex[t.sub]=planIndex[t.sub]||new Set()).add(enhedOpen);
+  if(!isAndet)(planIndex[t.sub]=planIndex[t.sub]||new Set()).add(enhedOpen);
   taskCount[enhedOpen]=u.tasks.length;
-  uLog((isNew?'Oprettede opgaven ':'Opdaterede opgaven ')+qt(saved.title)+' (delproces '+qt(sdp.title)+')');
+  uLog((isNew?'Oprettede opgaven ':'Opdaterede opgaven ')+qt(saved.title)+(isAndet?' (kategorien Andet)':' (delproces '+qt(sdp.title)+')'));
   uDrawerTask=saved.id;uEditBuf=null;
   saveUnit();render();uRenderDrawerView();
 }
@@ -2565,10 +2590,10 @@ function uDeleteTask(){
   if(uTaskById(t.id)){
     if(!confirm(`Slet opgaven "${t.title}"? Status, uger, ÅV og tekster slettes.`))return;
     u.tasks=u.tasks.filter(x=>x.id!==t.id);
-    if(!u.tasks.some(x=>x.sub===t.sub)&&planIndex[t.sub]){planIndex[t.sub].delete(enhedOpen);if(!planIndex[t.sub].size)delete planIndex[t.sub];}
+    if(t.sub!==U_ANDET&&!u.tasks.some(x=>x.sub===t.sub)&&planIndex[t.sub]){planIndex[t.sub].delete(enhedOpen);if(!planIndex[t.sub].size)delete planIndex[t.sub];}
     taskCount[enhedOpen]=u.tasks.length;
     const sdp=db.subs.find(x=>x.id===t.sub);
-    uLog('Slettede opgaven '+qt(t.title)+(sdp?' (delproces '+qt(sdp.title)+')':''));
+    uLog('Slettede opgaven '+qt(t.title)+(t.sub===U_ANDET?' (kategorien Andet)':(sdp?' (delproces '+qt(sdp.title)+')':'')));
     saveUnit();
   }
   uEditBuf=null;uCloseDrawer();render();
@@ -2637,9 +2662,10 @@ function uExportXLSX(){
   if(typeof XLSX==='undefined'){alert(NO_XLSX);return;}
   const uid=enhedOpen,u=curUnit();
   const rows=u.tasks.map(t=>{
-    const sdp=db.subs.find(x=>x.id===t.sub);if(!sdp)return null;
-    const m=mainById(sdp.main);
-    return {'Opgave-ID':t.id,'Delproces-ID':sdp.id,'Procesområde':area(m.area).name,'Hovedproces':m.title,'Delproces':sdp.title,'Opgave':t.title,
+    const isAndet=t.sub===U_ANDET;
+    const sdp=isAndet?null:db.subs.find(x=>x.id===t.sub);if(!isAndet&&!sdp)return null;
+    const m=sdp?mainById(sdp.main):null;
+    return {'Opgave-ID':t.id,'Delproces-ID':isAndet?U_ANDET:sdp.id,'Procesområde':isAndet?'Andet':area(m.area).name,'Hovedproces':m?m.title:'','Delproces':sdp?sdp.title:'','Opgave':t.title,
       'Status':t.status||'','Team':uTeamName(t.team),'Uger (1-52)':weeksStr(t.weeks),'Ugenoter':JSON.stringify(t.weekNotes||{}),
       'Formål':t.formaal||'','Beskrivelse':t.beskrivelse||'','Mandat':t.mandat||'',
       'Ansvarlig (A)':(t.raci.A||[]).map(umRawName).join('; '),'Udførende (R)':(t.raci.R||[]).map(umRawName).join('; '),
@@ -2676,7 +2702,7 @@ function uImportXLSX(file){
     plRows.forEach(x=>{
       const sid=str(x['Delproces-ID']);
       if(!sid&&!str(x['Opgave']))return;
-      if(!db.subs.some(sdp=>sdp.id===sid&&roleIds(sdp,'RU').includes(enhedOpen))){skipped++;return;}
+      if(sid!==U_ANDET&&!db.subs.some(sdp=>sdp.id===sid&&roleIds(sdp,'RU').includes(enhedOpen))){skipped++;return;}
       const resources=String(x['Ressourcer ÅV']||'').split(';').map(v=>v.trim()).filter(Boolean).map(part=>{const k=part.lastIndexOf(':');if(k<0)return null;const e=memByName[part.slice(0,k).trim().toLowerCase()];if(!e)return null;return {e,h:Math.max(0.01,parseAAV(part.slice(k+1))||0.01)};}).filter(Boolean);
       let tid=str(x['Opgave-ID'])||newUid('uo');
       if(seenIds.has(tid))tid=newUid('uo');
@@ -2694,7 +2720,7 @@ function uImportXLSX(file){
     u.log=curUnit().log;
     unitDb[enhedOpen]=u;
     Object.keys(planIndex).forEach(sid=>{if(planIndex[sid])planIndex[sid].delete(enhedOpen);if(planIndex[sid]&&!planIndex[sid].size)delete planIndex[sid];});
-    u.tasks.forEach(t=>{(planIndex[t.sub]=planIndex[t.sub]||new Set()).add(enhedOpen);});
+    u.tasks.forEach(t=>{if(t.sub!==U_ANDET)(planIndex[t.sub]=planIndex[t.sub]||new Set()).add(enhedOpen);});
     taskCount[enhedOpen]=u.tasks.length;
     uLog('Importerede enhedens data fra Excel: '+u.tasks.length+' opgaver, '+u.members.length+' medarbejdere'+(skipped?' ('+skipped+' rækker sprunget over — delprocessen findes ikke, eller enheden er ikke R på den)':''));
     saveUnit();render();
