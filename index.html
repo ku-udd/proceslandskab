@@ -22,7 +22,7 @@
   .app{max-width:1180px;margin:0 auto;padding:0 22px 90px}
   button{font:inherit}
 
-  header.top{padding:24px 0 2px}
+  header.top{padding:24px 0 2px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
   .app{position:relative}
   #btn-auth{position:absolute;top:20px;right:22px;z-index:40;display:inline-flex;align-items:center;gap:6px;
     font-size:12px;padding:6px 11px;border-radius:999px}
@@ -404,6 +404,8 @@
   .admrow input,.admrow select{font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--surface);width:100%}
   .admrow .em{font-size:12px;color:var(--faint)}
   @media(max-width:760px){
+    header.top{align-items:stretch}
+
     .kpis{grid-template-columns:1fr 1fr}
     .tl{--tl-lw:118px}
     .ucolhead,.uoprow{grid-template-columns:26px 1.6fr 1fr 18px}
@@ -436,11 +438,13 @@
 
 <div class="app" id="app" style="display:none">
   <header class="top">
-    <div class="brand">
-      <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
-      <h1 id="app-title">Proceslandskab</h1>
+    <div class="headleft">
+      <div class="brand">
+        <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
+        <h1 id="app-title">Proceslandskab</h1>
+      </div>
+      <div class="ledelse" id="ledelse"></div>
     </div>
-    <div class="ledelse" id="ledelse"></div>
     <div class="headrow">
       <span class="savestat" id="savestat" aria-live="polite"></span>
       <button class="btn" id="btn-auth">Log ind</button>
