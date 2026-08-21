@@ -440,11 +440,11 @@
       <div class="eyebrow">Københavns Universitet · Uddannelsesadministrationen</div>
       <h1 id="app-title">Proceslandskab</h1>
     </div>
-    <div class="headrow">
-      <div class="ledelse" id="ledelse">
-        <div><b>Vicedirektør:</b> Rie Snekkerup</div>
-        <div><b>Uddannelseschefer:</b> Tina Lewis (Nørre), Trine Klitgaard Bro (Søndre) og Karen Rønnow (Frb+)</div>
+    <div class="ledelse" id="ledelse">
+        <div><b>Vicedirektør</b> · Uddannelsesadministrationen</div>
+        <div><b>Uddannelseschefer</b> · Nørre, Søndre og Frb+</div>
       </div>
+    <div class="headrow">
       <span class="savestat" id="savestat" aria-live="polite"></span>
       <button class="btn" id="btn-auth">Log ind</button>
       <div class="seg" role="tablist" aria-label="Visning">
@@ -611,7 +611,7 @@ function closeLog(){$('logmodal').classList.remove('open');}
 const keyRows=rows=>{const m={};rows.forEach(r=>m[r.id]=JSON.stringify(r));return m;};
 const keyAll=cur=>{const o={};Object.keys(cur).forEach(t=>o[t]=keyRows(cur[t]));return o;};
 function landRows(){
-  const reg=[];REG_KEYS.forEach(r=>{(db[r]||[]).forEach((x,i)=>reg.push({id:x.id,reg:r,name:x.name,parent:x.parent||null,pos:i}));});
+  const reg=[];REG_KEYS.forEach(r=>{(db[r]||[]).forEach((x,i)=>reg.push({id:x.id,reg:r,name:x.name,parent:x.parent||null,pos:i,section_leader:x.sl||null,education_chief:x.uc||null}));});
   return {
     areas:db.areas.map((a,i)=>({id:a.id,name:a.name,pos:i})),
     mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i})),
@@ -659,7 +659,7 @@ async function loadDb(){
         log:lg.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}))
       };
       REG_KEYS.forEach(r=>nd[r]=[]);
-      rg.forEach(x=>{if(nd[x.reg])nd[x.reg].push(REGS[x.reg]&&REGS[x.reg].parent?{id:x.id,name:x.name,parent:x.parent||''}:{id:x.id,name:x.name});});
+      rg.forEach(x=>{if(!nd[x.reg])return;const o=REGS[x.reg]&&REGS[x.reg].parent?{id:x.id,name:x.name,parent:x.parent||''}:{id:x.id,name:x.name};if(x.reg==='unitsUdd'){o.sl=x.section_leader||'';o.uc=x.education_chief||'';}nd[x.reg].push(o);});
       db=nd;loaded=true;
     }catch(e){console.warn('Kunne ikke hente fra Supabase:',e);}
     await loadPlanIndex();
@@ -1551,6 +1551,14 @@ function renderSettings(){
       mainsOfArea(a.id).map((mn,idx,arr)=>{const i=db.mains.findIndex(x=>x.id===mn.id);
         return `<div class="editline main">${nameInput('mains',i,'title',mn.title)}<select onchange="setMainArea(${i},this.value)">${db.areas.map(x=>opt(x.id,x.name,mn.area)).join('')}</select>${mvBtns(idx===0,idx===arr.length-1,`moveMain('${mn.id}'`)}${delBtn(subsOfMain(mn.id).length,'Har delprocesser',`removeMain('${mn.id}')`)}</div>`;}).join('')
     ).join('')+`<button class="addlink" onclick="addMain()">+ Tilføj hovedproces</button>`;
+  }else if(settingsTab==='ledelse'){
+    const fld=(i,label,prop,val,ph)=>`<label style="display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:7px 0 3px">${label}</label>
+      <input type="text" style="width:100%;font:inherit;font-size:13.5px;border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;background:var(--surface)" value="${esc(val)}" oninput="db.unitsUdd[${i}].${prop}=this.value.trim();scheduleSave()" placeholder="${ph}">
+      <div style="font-size:11.5px;color:var(--muted);margin-top:3px;min-height:1em">${val?(navnOpslag[val]?'Vises som: <b>'+esc(navnOpslag[val])+'</b>':'Ingen match i navnearket — id\'et vises, som det står'):''}</div>`;
+    body=db.unitsUdd.map((x,i)=>grpHead(x.name,REGS.unitsUdd.color)
+      +fld(i,'Uddannelseschef (ID fra fanen Navne)','uc',x.uc||'','ID fra fanen Navne')
+      +fld(i,'Sektionsleder (ID fra fanen Navne)','sl',x.sl||'','ID fra fanen Navne — fx DE-17')).join('')
+      +hintBox('Skriv ID\'et fra navnearket — aldrig navnet. Navnet vises kun, når navnearket er indlæst via Data → Indlæs navne (Excel), og gemmes ikke i databasen. Ledelsen vises i enhedens opgaveoverblik.');
   }else if(REGS[settingsTab]){
     const reg=settingsTab,cfg=REGS[reg],isUnit=cfg.kind==='unit',isChild=!!cfg.parent,pOne=isChild?REGS[cfg.parent].one:'';
     const moveSel=(x,i)=>isUnit?`<select title="Flyt til andet enhedsregister" onchange="moveReg('${reg}',${i},this.value)">${UNIT_REGS.map(r=>opt(r,REGS[r].label,reg)).join('')}</select>`
@@ -1594,7 +1602,7 @@ function renderSettings(){
   m.innerHTML=modalBox('Struktur & organisation','closeSettings()',`<div class="tabbar">
       ${tab('areas',`Procesområder (${db.areas.length})`)}${tab('mains',`Hovedprocesser (${db.mains.length})`)}
       ${regTabs(['kapabiliteter','delkapabiliteter'])}<div class="brk"></div>
-      ${regTabs(UNIT_REGS)}<div class="brk"></div>
+      ${regTabs(UNIT_REGS)}<button class="${settingsTab==='ledelse'?'on':''}" onclick="settingsTab='ledelse';renderSettings()">Ledelse pr. enhed</button><div class="brk"></div>
       ${regTabs(['procesejere','driftejere'])}<div class="brk"></div>
       ${regTabs(['leaderteams','workgroups'])}
     </div>
@@ -1762,6 +1770,8 @@ function importXLSX(file){if(!canEdit())return showLogin();
       const usedAreas=new Set(nd.mains.map(m=>m.area));
       nd.areas=nd.areas.filter(a=>usedAreas.has(a.id));
       nd.log=Array.isArray(db.log)?db.log:[];
+      /* ledelses-id'er (uc/sl) følger med enheder, der beholder deres id */
+      nd.unitsUdd.forEach(u=>{const ex=db.unitsUdd.find(x=>x.id===u.id);if(ex){u.sl=ex.sl||'';u.uc=ex.uc||'';}});
       db=nd;normalizeDb();
       const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder';
       logChange('Importerede hele landskabet fra Excel: '+sum);
@@ -1993,7 +2003,7 @@ const fmtAAV=n=>new Intl.NumberFormat('da-DK',{maximumFractionDigits:2}).format(
 const parseKr=v=>{if(typeof v==='number')return Math.round(v);const d=String(v==null?'':v).replace(/[^0-9]/g,'');return d?parseInt(d,10):0;};
 const parseAAV=v=>{if(typeof v==='number')return v;const n=parseFloat(String(v==null?'':v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n;};
 const statusDot=st=>{const c=st==='aktiv'?'var(--ok)':st==='planlagt'?'var(--warn)':st==='inaktiv'?'var(--over)':'var(--muted)';return `<span class="status-dot" style="background:${c}"></span>`;};
-function blankUnit(){return {members:[],teams:[],plans:{},sectionLeader:'',educationChief:'',log:[]};}
+function blankUnit(){return {members:[],teams:[],plans:{},log:[]};}
 /* ledere gemmes som ID — navnet slås op i navnearket (fallback: id'et/teksten selv) */
 const uLeaderName=id=>id?(navnOpslag[id]||id):'';
 const curUnit=()=>unitDb[enhedOpen]||blankUnit();
@@ -2044,7 +2054,7 @@ function unitRows(uid){
     unit_members:u.members.map((m,i)=>({id:m.id,enhed:uid,name:m.name,team:m.team||null,capacity:m.capacity==null?1:+m.capacity,pos:i})),
     unit_teams:u.teams.map((t,i)=>({id:t.id,enhed:uid,name:t.name,pos:i})),
     unit_plans:Object.values(u.plans).map(p=>({id:uid+'|'+p.sub,enhed:uid,sub_id:p.sub,status:p.status||null,team:p.team||null,weeks:p.weeks||{},week_notes:p.weekNotes||{},raci:p.raci||{},resources:p.resources||[],formaal:p.formaal||null,beskrivelse:p.beskrivelse||null,mandat:p.mandat||null,budget:+p.budget||0,budget_note:p.budgetNote||null,note:p.note||null})),
-    unit_settings:[{id:uid,enhed:uid,section_leader:u.sectionLeader||null,education_chief:u.educationChief||null}],
+
     unit_log:u.log.map(e=>({id:e.id,enhed:uid,t:e.t,who:e.who||null,msg:e.msg}))
   };
 }
@@ -2054,13 +2064,12 @@ async function loadUnit(uid,force){
   if(sb){
     try{
       const q=(t,ord)=>{let x=sb.from(t).select('*').eq('enhed',uid);return ord?x.order(ord,{ascending:true}):x;};
-      const res=await Promise.all([q('unit_members','pos'),q('unit_teams','pos'),q('unit_plans'),q('unit_settings'),q('unit_log','t')]);
+      const res=await Promise.all([q('unit_members','pos'),q('unit_teams','pos'),q('unit_plans'),q('unit_log','t')]);
       for(const r of res)if(r.error)throw r.error;
-      const [me,te,pl,se,lo]=res.map(r=>r.data||[]);
+      const [me,te,pl,lo]=res.map(r=>r.data||[]);
       u.members=me.map(x=>({id:x.id,name:x.name,team:x.team||'',capacity:x.capacity==null?1:+x.capacity}));
       u.teams=te.map(x=>({id:x.id,name:x.name}));
       pl.forEach(x=>{u.plans[x.sub_id]=normPlan({sub:x.sub_id,status:x.status||'aktiv',team:x.team||'',weeks:x.weeks||{},weekNotes:x.week_notes||{},raci:x.raci||{},resources:x.resources||[],formaal:x.formaal||'',beskrivelse:x.beskrivelse||'',mandat:x.mandat||'',budget:+x.budget||0,budgetNote:x.budget_note||'',note:x.note||''});});
-      if(se[0]){u.sectionLeader=se[0].section_leader||'';u.educationChief=se[0].education_chief||'';}
       u.log=lo.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}));
     }catch(e){console.warn('Kunne ikke hente enhedsdata:',e);}
   }
@@ -2125,8 +2134,8 @@ function renderEnhedPage(){
   let h=`<div class="uhead">
     <div>
       <h2>${esc(anyName(uid))}</h2>
-      ${u.educationChief?`<div class="usub">Uddannelseschef · <b>${esc(uLeaderName(u.educationChief))}</b></div>`:''}
-      <div class="usub">${u.sectionLeader?`Sektionsleder · <b>${esc(uLeaderName(u.sectionLeader))}</b> · `:''}${plural(subs.length,'delproces','delprocesser')} hvor enheden er udførende (R)</div>
+      ${(regItem('unitsUdd',uid)||{}).uc?`<div class="usub">Uddannelseschef · <b>${esc(uLeaderName(regItem('unitsUdd',uid).uc))}</b></div>`:''}
+      <div class="usub">${(regItem('unitsUdd',uid)||{}).sl?`Sektionsleder · <b>${esc(uLeaderName(regItem('unitsUdd',uid).sl))}</b> · `:''}${plural(subs.length,'delproces','delprocesser')} hvor enheden er udførende (R)</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn" onclick="closeEnhed()">← Tilbage til landskabet</button>
@@ -2474,13 +2483,6 @@ function uRenderSettings(){
       return `<div class="editline team"><input type="text" value="${esc(t.name)}" oninput="curUnit().teams[${i}].name=this.value;uScheduleSave()" placeholder="Teamnavn"><span class="em">${cnt} ${cnt===1?'medarbejder':'medarbejdere'}</span><button class="iconbtn" onclick="uRemoveTeam(${i})">×</button></div>`;}).join('')
       :`<div style="font-size:13px;color:var(--faint);padding:6px 0">Ingen teams endnu.</div>`)
       +`<button class="addlink" onclick="uAddTeam()">+ Tilføj team</button>`;
-  }else if(uState.settingsTab==='sektion'){
-    const fld=(label,val,prop,ph)=>`<label style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:14px 0 6px">${label}</label>
-      <input type="text" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--line-strong);border-radius:9px;padding:9px 11px;background:var(--surface)" value="${esc(val)}" oninput="curUnit().${prop}=this.value.trim();uScheduleSave()" placeholder="${ph}">
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;min-height:1em">${val?(navnOpslag[val]?'Vises som: <b>'+esc(navnOpslag[val])+'</b>':'Ingen match i navnearket — id\'et vises, som det står'):''}</div>`;
-    body=fld('Uddannelseschef (ID fra navnearket)',u.educationChief,'educationChief','Fx UC-01')
-      +fld('Sektionsleder (ID fra navnearket)',u.sectionLeader,'sectionLeader','Fx DE-17')
-      +`<div style="font-size:11.5px;color:var(--faint);margin-top:12px">Skriv ID'et — aldrig navnet. Navnet vises kun, når navnearket er indlæst via landskabets <em>Data → Indlæs navne (Excel)</em>, og gemmes ikke i databasen.</div>`;
   }else{
     const topt=p=>`<option value=""${!p.team?' selected':''}>Intet team</option>`+u.teams.map(t=>opt(t.id,t.name,p.team)).join('');
     const personRow=p=>{const i=u.members.findIndex(x=>x.id===p.id);const used=Object.values(u.plans).some(pl=>uInvolved(pl).includes(p.id)||(pl.resources||[]).some(r=>r.e===p.id));
@@ -2495,7 +2497,7 @@ function uRenderSettings(){
   }
   const tab=(id,label)=>`<button class="${uState.settingsTab===id?'on':''}" onclick="uState.settingsTab='${id}';uRenderSettings()">${label}</button>`;
   $('settings').innerHTML=modalBox('Struktur & personer · '+esc(anyName(enhedOpen)),'uCloseSettings()',`<div class="tabbar">
-      ${tab('people',`Medarbejdere (${u.members.length})`)}${tab('teams',`Teams (${u.teams.length})`)}${tab('sektion','Ledelse')}
+      ${tab('people',`Medarbejdere (${u.members.length})`)}${tab('teams',`Teams (${u.teams.length})`)}
     </div><div class="mbody">${body}</div>`);
 }
 let uSaveDebounce=null;
@@ -2542,14 +2544,12 @@ function uExportXLSX(){
   }).filter(Boolean);
   const med=u.members.map(p=>({'ID':p.id,'Funktion/initialer':p.name,'Team':uTeamName(p.team),'Kapacitet (ÅV)':p.capacity==null?1:p.capacity}));
   const tm=u.teams.map(t=>({'ID':t.id,'Navn':t.name}));
-  const sek=[{'Uddannelseschef (ID)':u.educationChief||'','Sektionsleder (ID)':u.sectionLeader||''}];
   try{
     const wb=XLSX.utils.book_new();
     const add=(rows,name,wch)=>{const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{}]);if(wch)ws['!cols']=wch;XLSX.utils.book_append_sheet(wb,ws,name);};
     add(plans,'Delprocesplaner',W([14,24,30,40,10,20,54,30,40,50,40,26,26,26,26,34,12,24,30]));
     add(med,'Medarbejdere',W([10,32,22,14]));
     add(tm,'Teams',W([10,26]));
-    add(sek,'Sektion',W([30]));
     XLSX.writeFile(wb,'opgaveoverblik-'+String(anyName(uid)).replace(/[^a-zA-Z0-9æøåÆØÅ_-]+/g,'_')+'.xlsx');
   }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
 }
@@ -2560,7 +2560,7 @@ function uImportXLSX(file){
     const plRows=sheet('Delprocesplaner');
     if(!plRows)throw new Error('arket »Delprocesplaner« mangler');
     const u=blankUnit();
-    const tmRows=sheet('Teams'),medRows=sheet('Medarbejdere'),sekRows=sheet('Sektion');
+    const tmRows=sheet('Teams'),medRows=sheet('Medarbejdere');
     u.teams=(tmRows||[]).filter(x=>str(x['Navn'])).map(x=>({id:str(x['ID'])||newUid('ut'),name:str(x['Navn'])}));
     const teamByName={};u.teams.forEach(t=>teamByName[t.name.trim().toLowerCase()]=t.id);
     u.members=(medRows||[]).filter(x=>str(x['Funktion/initialer']||x['Navn'])).map(x=>({id:str(x['ID'])||newUid('um'),name:str(x['Funktion/initialer']||x['Navn']),team:teamByName[str(x['Team']).toLowerCase()]||'',capacity:parseAAV(x['Kapacitet (ÅV)'])||1}));
@@ -2581,9 +2581,6 @@ function uImportXLSX(file){
         resources,formaal:str(x['Formål']),beskrivelse:str(x['Beskrivelse']),mandat:str(x['Mandat']),
         budget:parseKr(x['Budget (kr.)']),budgetNote:str(x['Budgetnote']),note:str(x['Bemærkning'])});
     });
-    const sekV=(...keys)=>{if(!sekRows||!sekRows[0])return undefined;for(const k of keys)if(sekRows[0][k]!=null&&sekRows[0][k]!=='')return String(sekRows[0][k]).trim();return undefined;};
-    u.sectionLeader=sekV('Sektionsleder (ID)','Sektionsleder')??curUnit().sectionLeader;
-    u.educationChief=sekV('Uddannelseschef (ID)','Uddannelseschef')??curUnit().educationChief;
     u.log=curUnit().log;
     unitDb[enhedOpen]=u;
     Object.keys(planIndex).forEach(sid=>{if(planIndex[sid])planIndex[sid].delete(enhedOpen);if(planIndex[sid]&&!planIndex[sid].size)delete planIndex[sid];});
