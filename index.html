@@ -2226,7 +2226,7 @@ function renderEnhedPage(){
   let h=`<div class="uhead">
     <div>
       <h2>${esc(anyName(uid))}</h2>
-      ${(regItem('unitsUdd',uid)||{}).uc?`<div class="usub">Uddannelseschef · <b>${esc(uLeaderName(regItem('unitsUdd',uid).uc))}</b></div>`:''}
+      ${(regItem('unitsUdd',uid)||{}).uc?`<div class="usub">Chef · <b>${esc(uLeaderName(regItem('unitsUdd',uid).uc))}</b></div>`:''}
       ${(regItem('unitsUdd',uid)||{}).sl?`<div class="usub">Sektionsleder · <b>${esc(uLeaderName(regItem('unitsUdd',uid).sl))}</b></div>`:''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
