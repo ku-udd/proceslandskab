@@ -332,6 +332,9 @@
   .unitleders .ull{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .unitleders select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--surface);width:100%;min-width:0}
   @media(max-width:760px){.unitleders{grid-template-columns:1fr}}
+  .areaowner{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);padding:9px 14px 1px}
+  .areaowner b{color:var(--ink);font-weight:600}
+  .areaowner .aoc{color:var(--faint)}
   .btn.back{border-color:var(--wine);color:var(--wine);font-weight:600}
   .btn.back:hover{background:var(--wine);color:#fff}
   .udatawrap{position:relative}
@@ -887,6 +890,14 @@ function subRow(s,uid,showMain,mv){
 /* ============================================================
    VISNING 1 — LANDSKAB (procesområde → hovedproces → delproces)
    ============================================================ */
+/* primær procesejer for et procesområde = den procesejer med flest ejerskaber på områdets delprocesser (uafgjort: registrets rækkefølge) */
+function primaryOwner(aid){
+  const cnt={};
+  db.mains.filter(m=>m.area===aid).forEach(m=>subsOfMain(m.id).forEach(sd=>roleIds(sd,'PE').forEach(id=>{cnt[id]=(cnt[id]||0)+1;})));
+  let best='',n=0;
+  db.procesejere.forEach(pe=>{if((cnt[pe.id]||0)>n){best=pe.id;n=cnt[pe.id];}});
+  return best?{id:best,n}:null;
+}
 function renderLandskab(){
   const subs=filteredSubs();
   const subIds=new Set(subs.map(s=>s.id));
@@ -909,7 +920,10 @@ function renderLandskab(){
       }).join('')+(canEdit()?`<button class="addsub" onclick="newSub('${m.id}')">+ Tilføj delproces</button>`:'');
       return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,plural(ms.length,'delproces','delprocesser'),colHead('Delproces'),rows,` data-main="${m.id}"`);
     }).join('');
-    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aUnits?' · '+aUnits+' enheder':''}`,inner,` data-area="${a.id}"`);
+    const po=primaryOwner(a.id);
+    const aTotal=mns.reduce((x,m)=>x+subsOfMain(m.id).length,0);
+    const poLine=po?`<div class="areaowner"><span class="avatar" style="width:19px;height:19px;font-size:8.5px;flex:none">${initials(anyName(po.id))}</span>Primær procesejer · <b>${esc(anyName(po.id))}</b><span class="aoc">· ${plural(aTotal,'delproces','delprocesser')}</span></div>`:'';
+    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aUnits?' · '+aUnits+' enheder':''}`,poLine+inner,` data-area="${a.id}"`);
   });
   return h;
 }
