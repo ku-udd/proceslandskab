@@ -2365,7 +2365,7 @@ function uRenderPlanList(){
         if(rows2)inner2+=`<div class="ciarea"><span class="dot" style="background:${areaColor(a2.id)}"></span>${esc(a2.name)}</div>`+rows2;
       });
       const nC=ciSubs.filter(sd=>roleIds(sd,'C').includes(uid)).length,nI=ciSubs.length-nC;
-      h+=`<div class="ciwrap">`+branch(uState.openAreas.has('__ci'),`uToggleArea('__ci')`,'transparent','Konsulteres & informeres',`kun til orientering — enheden er ikke udførende · ${nC} med C · ${nI} med I`,`<div class="cibody">${inner2}</div>`)+`</div>`;
+      h+=`<div class="ciwrap">`+branch(uState.openAreas.has('__ci'),`uToggleArea('__ci')`,'transparent','Konsulteres (C) & informeres (I)',`${plural(nC,'delproces','delprocesser')} med C · ${plural(nI,'delproces','delprocesser')} med I`,`<div class="cibody">${inner2}</div>`)+`</div>`;
     }
   }
   return h;
