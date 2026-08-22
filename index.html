@@ -332,6 +332,19 @@
   .unitleders .ull{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .unitleders select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--surface);width:100%;min-width:0}
   @media(max-width:760px){.unitleders{grid-template-columns:1fr}}
+  .ciwrap .areagroup{border:1.5px dashed var(--line-strong);background:var(--paper);box-shadow:none}
+  .ciwrap .ahead .swatch{border:1.5px dashed var(--line-strong);background:transparent!important}
+  .ciwrap .atitle{color:var(--muted)}
+  .cibody{padding:4px 0 8px}
+  .ciarea{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--faint);padding:10px 14px 3px}
+  .ciarea .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .cirow{display:grid;grid-template-columns:26px 1fr 18px;gap:10px;align-items:center;padding:7px 14px;cursor:pointer}
+  .cirow:hover{background:var(--surface-2)}
+  .cirow .opname{font-size:13px}
+  .cirow .opname small{display:block;font-size:11.5px;color:var(--faint)}
+  .citag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;font-size:11px;font-weight:700}
+  .citag.c{background:#EBDFC8;color:#7A5B12}
+  .citag.i{background:#E2E4EA;color:#4A5265}
   .btn.back{border-color:var(--wine);color:var(--wine);font-weight:600}
   .btn.back:hover{background:var(--wine);color:#fff}
   .udatawrap{position:relative}
@@ -2337,6 +2350,23 @@ function uRenderPlanList(){
       +(uCanEdit()?`<div class="usubfoot"><button class="addlink" onclick="uNewTask('${U_ANDET}')">+ Ny opgave</button></div>`:'');
     const inner=`<div class="maincard subcard open"><div class="mwrap">${rows}</div></div>`;
     h+=branch(anyF||uState.openAreas.has(U_ANDET),`uToggleArea('${U_ANDET}')`,'var(--faint)','Andet',`enhedens egne opgaver uden delproces · ${plural(andetTs.length,'opgave','opgaver')}${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
+  }
+  /* alternativ indgang: delprocesser hvor enheden kun er Konsulteres (C) eller Informeres (I) */
+  if(!anyF){
+    const ciSubs=db.subs.filter(sd=>!roleIds(sd,'RU').includes(uid)&&(roleIds(sd,'C').includes(uid)||roleIds(sd,'I').includes(uid)));
+    if(ciSubs.length){
+      const ciIds=new Set(ciSubs.map(x=>x.id));
+      let inner2='';
+      db.areas.forEach(a2=>{
+        const rows2=db.mains.filter(m2=>m2.area===a2.id).flatMap(m2=>subsOfMain(m2.id).filter(x=>ciIds.has(x.id)).map(sd=>{
+          const tag=roleIds(sd,'C').includes(uid)?'<span class="citag c" title="Konsulteres">C</span>':'<span class="citag i" title="Informeres">I</span>';
+          return `<div class="cirow" onclick="openDrawer('${jsq(sd.id)}')">${tag}<div class="opname">${esc(sd.title)}<small>${esc(m2.title)}</small></div>${ARROW_R}</div>`;
+        })).join('');
+        if(rows2)inner2+=`<div class="ciarea"><span class="dot" style="background:${areaColor(a2.id)}"></span>${esc(a2.name)}</div>`+rows2;
+      });
+      const nC=ciSubs.filter(sd=>roleIds(sd,'C').includes(uid)).length,nI=ciSubs.length-nC;
+      h+=`<div class="ciwrap">`+branch(uState.openAreas.has('__ci'),`uToggleArea('__ci')`,'transparent','Konsulteres & informeres',`kun til orientering — enheden er ikke udførende · ${nC} med C · ${nI} med I`,`<div class="cibody">${inner2}</div>`)+`</div>`;
+    }
   }
   return h;
 }
