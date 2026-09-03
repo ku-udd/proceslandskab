@@ -369,7 +369,7 @@
    DATALAG + PERSISTENS
    Struktur: procesområder → hovedprocesser → delprocesser (RACI + kapabilitet ligger på delprocessen).
    Data ligger i Supabase: tabellen "landskab", rækken id=1, kolonnen "data" (jsonb). Gemmes automatisk;
-   localStorage er kun offline-nødkopi. Registrene procesejere/udførende ledere (driftejere) indeholder KUN id + funktion —
+   localStorage er kun offline-nødkopi. Registrene procesejere/driftejere (vises som Procesejer / Udførende leder) indeholder KUN id + funktion —
    aldrig navne. Navne indlæses fra et Excel-ark og lever kun i hukommelsen (navnOpslag).
    ============================================================ */
 const SUPABASE_URL='https://lwejqapnzkoldqyxunyk.supabase.co';
@@ -390,7 +390,7 @@ const OWNER_REGS=['procesejere','driftejere'];
 /* Rollerne på en delproces — hver rolle henter sine værdier i ét eller flere registre */
 const ROLE_DEFS=[
  {k:'PE',r:'A',label:'Procesejer',col:'Procesejer (A)',regs:['procesejere']},
- {k:'DE',r:'R',label:'Udførende ledere',col:'Udførende leder (R)',altCol:'Driftsejer (A)',regs:['driftejere']},
+ {k:'DE',r:'A',label:'Udførende leder',col:'Udførende leder (A)',altCols:['Driftsejer (A)','Driftejer (A)'],regs:['driftejere']},
  {k:'RU',r:'R',label:'Udførende',col:'Udførende (R - UDDADM)',regs:['unitsUdd']},
  {k:'RA',r:'R',label:'Udførende',col:'Udførende (R - Andre ADM)',regs:['unitsAdm']},
  {k:'RF',r:'R',label:'Udførende',col:'Udførende (R - Fagmiljø)',regs:['unitsFak']},
@@ -407,7 +407,7 @@ const REGS={
   unitsAdm:{label:'Enheder - andre ADM-enheder',viewLabel:'Andre ADM-enheder',one:'enhed under andre ADM',pre:'ua',sheet:'Enheder - andre ADM',placeholder:'Enhedens navn',kind:'unit',color:'#2F6F8F'},
   unitsFak:{label:'Enheder - FAK/Inst',viewLabel:'FAK/INST',one:'enhed under FAK/Inst',pre:'uf',sheet:'Enheder - FAK-Inst',placeholder:'Enhedens navn',kind:'unit',color:'#4F7A4A'},
   procesejere:{label:'Procesejer',one:'procesejer',pre:'pe',sheet:'Procesejer',alt:['Procesejere','Ejere'],placeholder:'Funktion — ingen navne',kind:'owner',color:'#8A1C24'},
-  driftejere:{label:'Udførende ledere',one:'udførende leder',pre:'de',sheet:'Udførende ledere',alt:['Driftsejere','Driftejere'],placeholder:'Funktion — ingen navne',kind:'owner',color:'#B5623A'},
+  driftejere:{label:'Udførende leder',one:'udførende leder',pre:'de',sheet:'Udførende leder',alt:['Driftsejere','Driftejere'],placeholder:'Funktion — ingen navne',kind:'owner',color:'#B5623A'},
   kapabiliteter:{label:'Kapabilitet',one:'kapabilitet',pre:'ka',sheet:'Kapabilitet',placeholder:'Kapabilitetens navn',kind:'ref',color:'#2F6F8F'},
   delkapabiliteter:{label:'Delkapabilitet',one:'delkapabilitet',pre:'dk',sheet:'Delkapabilitet',parent:'kapabiliteter',placeholder:'Delkapabilitetens navn',kind:'ref',color:'#4F7A4A'},
   leaderteams:{label:'Lederteam',one:'lederteam',pre:'lt',sheet:'Lederteam',alt:['Lederteams'],placeholder:'Lederteamets navn',kind:'ref',color:'#7A5A8F'},
@@ -558,7 +558,7 @@ function normalizeDb(){
     if(lts.size===1)w.parent=lts.values().next().value;
   });
 }
-/* Ældre data flyttes over i de nuværende registre: én enhedsliste → tre, ejere delt i procesejer/udførende leder, tekstreferencer → id'er */
+/* Ældre data flyttes over i de nuværende registre: én enhedsliste → tre, ejere delt i procesejer/udførende leder (tidl. driftsejer), tekstreferencer → id'er */
 function migrateRefs(){
   const legacyUnits=Array.isArray(db.units)?db.units:null;
   const legacyOwners=Array.isArray(db.owners)?db.owners:null;
@@ -628,7 +628,7 @@ const arrow=(n,w,up)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill=
 const emptyState=(b,t)=>`<div class="empty-state"><b>${b}</b>${t}</div>`;
 const EMPTY_APP=emptyState('Appen er tom','Hent proceslandskabet ind via <em>Data → Importér fra Excel</em> for at komme i gang.');
 const appEmpty=()=>!db.subs.length&&!db.mains.length&&!allUnitList().length;
-const colHead=t=>`<div class="colhead"><div></div><div>${t}</div><div class="c-lt">Lederteam</div><div>Procesejer (A)</div><div class="c-de">Udførende leder (R)</div><div></div></div>`;
+const colHead=t=>`<div class="colhead"><div></div><div>${t}</div><div class="c-lt">Lederteam</div><div>Procesejer (A)</div><div class="c-de">Udførende leder (A)</div><div></div></div>`;
 const viewHead=(h2,sub)=>`<div class="viewhead"><h2>${h2}</h2><span class="vh-sub">${sub}</span></div>`;
 const plural=(n,one,many)=>n+' '+(n===1?one:many);
 const mainsCount=subs=>new Set(subs.map(s=>s.main)).size;
@@ -1549,7 +1549,7 @@ function importXLSX(file){if(!canEdit())return showLogin();
       nd.subs=delRows.filter(x=>str(x['Delproces'])).map(x=>{
         const aid=areaId(x['Procesområde']),mid=mainId(aid,x['Hovedproces']),kapId=mk.kapabiliteter(x['Kapabilitet']);
         const roles={};
-        ROLE_DEFS.forEach(d=>{const names=splitNames(x[d.col]!==undefined?x[d.col]:(d.altCol?x[d.altCol]:''));roles[d.k]=names.map(d.regs.length>1?anyUnitId:mk[d.regs[0]]).filter(Boolean);});
+        ROLE_DEFS.forEach(d=>{const raw=[d.col,...(d.altCols||[])].map(c=>x[c]).find(v=>str(v))||'';roles[d.k]=splitNames(raw).map(d.regs.length>1?anyUnitId:mk[d.regs[0]]).filter(Boolean);});
         const ltIdVal=mk.leaderteams(x['Lederteam']),st=str(x['Ændringsstatus']);
         return {id:str(x['ID'])||newId('d'),main:mid,title:str(x['Delproces']),
           kap:kapId,delkap:childId.delkapabiliteter(x['Delkapabilitet'],kapId),
