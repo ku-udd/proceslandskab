@@ -911,7 +911,10 @@ function renderLandskab(){
   areasShown.forEach(a=>{
     const mns=mainsShown.filter(m=>m.area===a.id);
     const aSubs=mns.flatMap(m=>subsOfMain(m.id).filter(s=>subIds.has(s.id)));
-    const aUnits=new Set(aSubs.flatMap(involved)).size;
+    /* distinkte procesejere og lederteams på områdets delprocesser (registrenes rækkefølge; vis 2, resten som +n) */
+    const listShort=(reg,ids)=>{const u2=db[reg].filter(x=>ids.has(x.id)).map(x=>anyName(x.id));if(!u2.length)return '';const shown=u2.slice(0,2).map(esc).join(', ');return shown+(u2.length>2?' +'+(u2.length-2):'');};
+    const aPE=listShort('procesejere',new Set(aSubs.flatMap(x=>roleIds(x,'PE'))));
+    const aLT=listShort('leaderteams',new Set(aSubs.map(x=>x.lederteam).filter(Boolean)));
     const inner=mns.map(m=>{
       const ms=subsOfMain(m.id).filter(s=>subIds.has(s.id)),allSibs=subsOfMain(m.id);
       const rows=ms.map(s=>{
@@ -922,7 +925,7 @@ function renderLandskab(){
       }).join('')+(canEdit()?`<button class="addsub" onclick="newSub('${m.id}')">+ Tilføj delproces</button>`:'');
       return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,plural(ms.length,'delproces','delprocesser'),colHead('Delproces'),rows,` data-main="${m.id}"`);
     }).join('');
-    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aUnits?' · '+aUnits+' enheder':''}`,inner,` data-area="${a.id}"`);
+    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aPE?` · Procesejer · <b style="color:var(--ink);font-weight:600">${aPE}</b>`:''}${aLT?` · Lederteam · <b style="color:var(--ink);font-weight:600">${aLT}</b>`:''}`,inner,` data-area="${a.id}"`);
   });
   return h;
 }
