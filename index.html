@@ -925,7 +925,7 @@ function renderLandskab(){
       }).join('')+(canEdit()?`<button class="addsub" onclick="newSub('${m.id}')">+ Tilføj delproces</button>`:'');
       return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,plural(ms.length,'delproces','delprocesser'),colHead('Delproces'),rows,` data-main="${m.id}"`);
     }).join('');
-    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aPE?` · Procesejer: <b style="color:var(--ink);font-weight:600">${aPE}</b>`:''}${aLT?` · Lederteam: <b style="color:var(--ink);font-weight:600">${aLT}</b>`:''}`,inner,` data-area="${a.id}"`);
+    h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aPE||aLT?`<span style="display:block;margin-top:1px">${aPE?`Procesejer: <b style="color:var(--ink);font-weight:600">${aPE}</b>`:''}${aPE&&aLT?' · ':''}${aLT?`Lederteam: <b style="color:var(--ink);font-weight:600">${aLT}</b>`:''}</span>`:''}`,inner,` data-area="${a.id}"`);
   });
   return h;
 }
