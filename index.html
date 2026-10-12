@@ -1125,8 +1125,10 @@ function renderDrawerView(){
       <div class="field row2">${field('Kapabilitet',vOr(kapName(s)))}${field('Delkapabilitet',vOr(delkapName(s)))}</div>
       <div class="field row2">${field('Procesområde',esc(area(oid).name),` style="color:${areaColor(oid)}"`)}${field('Hovedproces',esc(m.title))}</div>
       <div class="field row2">${field('Lederteam',vOr(ltName(s)))}${field('Arbejdsfællesskab',vOr(afName(s)))}</div>
-      <div class="field row2">${field('Kanaler',s.kanaler?esc(s.kanaler):NOT_SET)}${field('Målgruppe',s.maalgruppe?esc(s.maalgruppe):NOT_SET)}</div>
-      <div class="field row2">${field('Dokumentation',lvlTag(DOK_VALUES,s.dok)||NOT_SET,lvlOf(DOK_VALUES,s.dok)?` title="${esc(lvlOf(DOK_VALUES,s.dok).l)}"`:'')}${field('Ensartethed i opgaveløsning',lvlTag(ENS_VALUES,s.ens)||NOT_SET,lvlOf(ENS_VALUES,s.ens)?` title="${esc(lvlOf(ENS_VALUES,s.ens).l)}"`:'')}</div>
+      <div class="field">${field('Kanaler',s.kanaler?esc(s.kanaler):NOT_SET)}</div>
+      <div class="field">${field('Målgruppe',s.maalgruppe?esc(s.maalgruppe):NOT_SET)}</div>
+      <div class="field">${field('Dokumentation',lvlOf(DOK_VALUES,s.dok)?`${lvlTag(DOK_VALUES,s.dok)} <span style="font-size:13px;color:var(--muted)">${esc(lvlOf(DOK_VALUES,s.dok).l)}</span>`:NOT_SET)}</div>
+      <div class="field">${field('Ensartethed i opgaveløsning',lvlOf(ENS_VALUES,s.ens)?`${lvlTag(ENS_VALUES,s.ens)} <span style="font-size:13px;color:var(--muted)">${esc(lvlOf(ENS_VALUES,s.ens).l)}</span>`:NOT_SET)}</div>
       <div class="field"><div class="k">Ansvar og involvering (RACI)</div><div class="raci-grid">${ROLE_KEYS.map(racLine).join('')}</div></div>
       ${(s.status||s.note)?`<div class="field"><div class="k">Ændring ift. tidligere proceslandskab</div><div class="v">${s.status?statusTag(s.status)+' ':''}${s.note?esc(s.note):''}</div></div>`:''}
     </div>`;
@@ -1156,8 +1158,10 @@ function renderDrawerEdit(){
       <div class="two">${lab('Kapabilitet',regSelect('kapabiliteter','kap',s.kap))}${lab('Delkapabilitet',childSelect('delkapabiliteter','delkap',s))}</div>
       <div class="two">${lab('Procesområde',`<select onchange="setEditArea(this.value)">${db.areas.map(a=>opt(a.id,a.name,aid)).join('')}</select>`)}${lab('Hovedproces','<div id="main-select"></div>')}</div>
       <div class="two">${lab('Lederteam',regSelect('leaderteams','lederteam',s.lederteam))}${lab('Arbejdsfællesskab',childSelect('workgroups','arbfael',s))}</div>
-      <div class="two">${lab('Kanaler',`<textarea rows="2" placeholder="Fx mail, telefon, KUnet …" oninput="editBuf.kanaler=this.value">${esc(s.kanaler||'')}</textarea>`)}${lab('Målgruppe',`<textarea rows="2" placeholder="Fx studerende, undervisere, institutter …" oninput="editBuf.maalgruppe=this.value">${esc(s.maalgruppe||'')}</textarea>`)}</div>
-      <div class="two">${lab('Dokumentation',`<select onchange="editBuf.dok=this.value"><option value="">Ikke angivet</option>${DOK_VALUES.map(x=>opt(x.v,x.l,s.dok||'')).join('')}</select>`)}${lab('Ensartethed i opgaveløsning',`<select onchange="editBuf.ens=this.value"><option value="">Ikke angivet</option>${ENS_VALUES.map(x=>opt(x.v,x.l,s.ens||'')).join('')}</select>`)}</div>
+      <label>Kanaler</label><textarea rows="3" placeholder="Fx mail, telefon, KUnet …" oninput="editBuf.kanaler=this.value">${esc(s.kanaler||'')}</textarea>
+      <label>Målgruppe</label><textarea rows="3" placeholder="Fx studerende, undervisere, institutter …" oninput="editBuf.maalgruppe=this.value">${esc(s.maalgruppe||'')}</textarea>
+      <label>Dokumentation</label><select onchange="editBuf.dok=this.value"><option value="">Ikke angivet</option>${DOK_VALUES.map(x=>opt(x.v,x.l,s.dok||'')).join('')}</select>
+      <label>Ensartethed i opgaveløsning</label><select onchange="editBuf.ens=this.value"><option value="">Ikke angivet</option>${ENS_VALUES.map(x=>opt(x.v,x.l,s.ens||'')).join('')}</select>
       <label>Ansvar og involvering (RACI)</label><div id="roles-edit"></div>
       <div class="two">${lab('Ændringsstatus',`<select onchange="editBuf.status=this.value"><option value="">Ikke angivet</option>${STATUS_VALUES.map(v=>opt(v,v,s.status||'')).join('')}</select>`)}</div>
       <label>Ændringsbeskrivelse</label><textarea rows="4" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)" oninput="editBuf.note=this.value">${esc(s.note||'')}</textarea>
@@ -1427,7 +1431,7 @@ function renderMainEdit(){
       <label>Hovedprocessens navn</label><input type="text" value="${esc(m.title)}" oninput="mainEditBuf.title=this.value">
       <label>Procesområde</label><select onchange="mainEditBuf.area=this.value">${db.areas.map(a=>opt(a.id,a.name,m.area)).join('')}</select>
       <label class="chk"><input type="checkbox" ${m.forud?'checked':''} onchange="mainEditBuf.forud=this.checked">Forudsætning</label>
-      <label>Beskrivelse</label>${ta('beskrivelse','')}
+      <label>Beskrivelse</label><textarea rows="14" style="min-height:300px;resize:vertical" oninput="mainEditBuf.beskrivelse=this.value">${esc(m.beskrivelse||'')}</textarea>
       <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Kanaler, Målgruppe, Rolle/Ansvar, Procesejerskab, Dokumentation og Ensartethed i opgaveløsning udfyldes på delprocesserne og opsummeres automatisk her.</div>
     </div>`;
 }
