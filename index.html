@@ -95,6 +95,11 @@
   .btn.danger{color:var(--over);border-color:#e8cdc6}
   .btn.danger:hover{background:#fbeae6}
   .btn .ic{width:15px;height:15px}
+  /* direkte link til en enhed */
+  .linkic{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px;margin-left:8px;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:none;color:var(--faint);cursor:pointer}
+  .linkic svg{width:14px;height:14px}
+  .linkic:hover{color:var(--wine);background:var(--wine-soft)}
+  .linkic.done,.btn.done{color:var(--ok)}
   .menu-wrap{position:relative}
   .menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:6px;min-width:230px;z-index:50;display:none}
   .menu.open{display:block}
@@ -871,6 +876,7 @@ const toggleMain=id=>toggleSet(ui.openMains,id);
 const chev=n=>`<svg class="chev" width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>`;
 const ARROW_R='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
 const IC_DOWN='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
+const IC_LINK='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>';
 const arrow=(n,w,up)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}"><path d="${up?'M18 15l-6-6-6 6':'M6 9l6 6 6-6'}"/></svg>`;
 const emptyState=(b,t)=>`<div class="empty-state"><b>${b}</b>${t}</div>`;
 const EMPTY_APP=emptyState('Appen er tom','Hent proceslandskabet ind via <em>Data → Importér fra Excel</em> for at komme i gang.');
@@ -1014,11 +1020,12 @@ function renderEnhed(){
   let h=viewHead('Enheder',`${plural(uids.length,'enhed','enheder')} · ${mainsCount(subs)} hovedprocesser · ${subs.length} delprocesser`);
   uids.forEach(uid=>{
     const mine=subs.filter(s=>involved(s).includes(uid)),key='en>'+uid;
+    const meta=`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser${regOf(uid)?linkIc(uid):''}`;
     if(regOf(uid)==='unitsUdd'){
       /* UDD-enheder: klik åbner direkte enhedens opgaveoverblik */
-      h+=branch(false,`openEnhed('${jsq(uid)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,'');
+      h+=branch(false,`openEnhed('${jsq(uid)}')`,regColor(uid),anyName(uid),meta,'');
     }else{
-      h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),`${esc(regLabel(uid))} · ${mainsCount(mine)} hovedprocesser · ${mine.length} delprocesser`,mainsBlock(mine,key,uid,force));
+      h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,regColor(uid),anyName(uid),meta,mainsBlock(mine,key,uid,force));
     }
   });
   return h;
@@ -1934,6 +1941,7 @@ async function initAuth(){
   applyAuthUi();
   await loadDb();
   render();renderNavnStatus();
+  await applyRoute(true);
 }
 /* slår redigerings-UI til/fra ud fra login-status */
 function applyAuthUi(){
@@ -2059,9 +2067,9 @@ function toggleFilterPanel(f,e){
 function toggleFilterVal(f,v){
   const i=filters[f].indexOf(v);
   if(i>=0)filters[f].splice(i,1);else filters[f].push(v);
-  expandMatches();render();
+  dropRoute();expandMatches();render();
 }
-function clearFilter(f){filters[f]=[];expandMatches();render();}
+function clearFilter(f){filters[f]=[];dropRoute();expandMatches();render();}
 function closeFilterPanels(rerender){if(ui.openFilter===null)return;ui.openFilter=null;if(rerender)buildFilters();}
 
 const evt=(id,ev,fn)=>$(id).addEventListener(ev,fn);
@@ -2085,6 +2093,70 @@ evt('scrim','click',closeDrawer);
 evt('settings','click',e=>{if(e.target.id==='settings')closeSettings();});
 evt('logmodal','click',e=>{if(e.target.id==='logmodal')closeLog();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();closeSettings();closeLog();hideLogin();}});
+
+/* ============================================================
+   DIREKTE LINKS TIL ENHEDER
+   Format: <adresse>#/enhed/<enhedens-navn-som-slug>, fx #/enhed/frb-plus-studieliv-og-vejledning
+   (enhedens ID virker også: #/enhed/<id>). UDD-enheder åbner deres egen side;
+   øvrige enheder åbner Linje-fanen filtreret på enheden.
+   Linket følger enhedens navn — omdøbes enheden, skal et nyt link kopieres.
+   Browserens tilbage-knap virker mellem landskab og enhedssider.
+   ============================================================ */
+const BASE_TITLE=document.title;
+const slugify=s=>String(s||'').toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'oe').replace(/å/g,'aa').replace(/\+/g,' plus ')
+  .normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+/* slug ud fra enhedens navn; ID'et bruges, hvis navnet er tomt eller deles med en anden enhed */
+function unitSlug(uid){
+  const s=slugify(rawAnyName(uid));
+  const dup=allUnitList().filter(u=>slugify(u.name)===s).length>1;
+  return (!s||dup)?uid:s;
+}
+function findUnitByRef(ref){
+  let r=String(ref||'');try{r=decodeURIComponent(r);}catch(e){}
+  const all=allUnitList();
+  const hit=all.find(u=>u.id===r)||all.find(u=>slugify(u.name)===r.toLowerCase());
+  return hit?hit.id:null;
+}
+const unitHash=uid=>'#/enhed/'+encodeURIComponent(unitSlug(uid));
+const unitUrl=uid=>location.href.split('#')[0]+unitHash(uid);
+const ROUTE_RE=/^#\/enhed\/([^\/?#]+)/;
+function setRoute(h){
+  const want=h||'';
+  if((location.hash||'')===want)return;
+  try{history.pushState(null,'',want||(location.pathname+location.search));}catch(e){location.hash=want;}
+}
+/* fjern et enhedslink fra adressen uden at lave et nyt historik-punkt (fx når filteret ændres manuelt) */
+function dropRoute(){
+  if(!ROUTE_RE.test(location.hash||'')||enhedOpen)return;
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+}
+async function applyRoute(initial){
+  const m=ROUTE_RE.exec(location.hash||'');
+  if(!m){if(enhedOpen)closeEnhed(true);return;}
+  const uid=findUnitByRef(m[1]);
+  if(!uid){
+    if(initial)alert('Linket peger på en enhed, som ikke findes i proceslandskabet (længere).');
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    if(enhedOpen)closeEnhed(true);
+    return;
+  }
+  if(regOf(uid)==='unitsUdd'){if(enhedOpen!==uid)await openEnhed(uid,true);return;}
+  if(enhedOpen)closeEnhed(true);
+  filters.unit=[uid];ui.openKeys.add('en>'+uid);expandMatches();setView('enhed');
+}
+window.addEventListener('popstate',()=>applyRoute(false));
+window.addEventListener('hashchange',()=>applyRoute(false));
+async function copyUnitLink(uid,btn){
+  const url=unitUrl(uid);
+  try{await navigator.clipboard.writeText(url);}
+  catch(e){prompt('Kopiér linket til enheden:',url);return;}
+  if(!btn)return;
+  const lab=btn.querySelector('.lbl'),oldLab=lab?lab.textContent:'',oldTitle=btn.title;
+  btn.classList.add('done');btn.title='Link kopieret';if(lab)lab.textContent='Link kopieret';
+  setTimeout(()=>{btn.classList.remove('done');btn.title=oldTitle;if(lab)lab.textContent=oldLab;},1600);
+}
+/* lille link-ikon (bruges i Linje-fanen) */
+const linkIc=uid=>`<button class="linkic" title="Kopiér direkte link til enheden" aria-label="Kopiér direkte link til enheden" onclick="event.stopPropagation();copyUnitLink('${jsq(uid)}',this)">${IC_LINK}</button>`;
 
 /* ============================================================
    ENHEDSLAG — opgaveoverblik pr. UDD-enhed
@@ -2208,8 +2280,10 @@ function uLog(msg){
 }
 
 /* ---------- åbn/luk enhedens side ---------- */
-async function openEnhed(uid){
+async function openEnhed(uid,fromRoute){
   if(regOf(uid)!=='unitsUdd')return;
+  if(!fromRoute)setRoute(unitHash(uid));
+  document.title=rawAnyName(uid)+' · '+BASE_TITLE;
   closeDrawer();closeSettings();closeLog();
   enhedOpen=uid;
   uState={view:'plan',openAreas:new Set(),openMains:new Set(),openSubs:new Set(),tlSel:new Set(),tlPeople:new Set(),tlPanel:false,filters:{team:'',status:'',medarbejder:''},settingsTab:'people'};
@@ -2219,9 +2293,11 @@ async function openEnhed(uid){
   if(ti)ti.style.display='none';if(le)le.style.display='none';
   $('view').innerHTML='<div class="empty-state"><b>Henter enhedens data …</b></div>';
   await loadUnit(uid);
-  render();
+  if(enhedOpen===uid)render();
 }
-function closeEnhed(){
+function closeEnhed(fromRoute){
+  if(!fromRoute)setRoute('');
+  document.title=BASE_TITLE;
   enhedOpen=null;uDrawerTask=null;uEditBuf=null;
   const tb=document.querySelector('.toolbar'),seg=document.querySelector('header.top .seg');
   if(tb)tb.style.display='';if(seg)seg.style.display='';
@@ -2253,6 +2329,7 @@ function renderEnhedPage(){
       ${(regItem('unitsUdd',uid)||{}).sl?`<div class="usub">${idList(regItem('unitsUdd',uid).sl).length>1?'Sektionsledere':'Sektionsleder'} · <b>${esc(idNames(regItem('unitsUdd',uid).sl))}</b></div>`:''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn" onclick="copyUnitLink('${jsq(uid)}',this)" title="Kopiér et direkte link til denne enheds side">${IC_LINK}<span class="lbl">Kopiér link</span></button>
       <button class="btn back" onclick="closeEnhed()" title="Tilbage til landskabet"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Tilbage</button>
       <div class="seg" role="tablist" aria-label="Enhedsvisning">${segBtn('plan','Opgaver')}${segBtn('people','Medarbejdere')}${segBtn('tl','Tidslinje')}</div>
     </div>
