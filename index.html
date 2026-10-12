@@ -1311,7 +1311,7 @@ const IC_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const mainInfoBtn=id=>`<button class="infobtn" onclick="event.stopPropagation();openMain('${jsq(id)}')" title="Hovedprocessens oplysninger — beskrivelse, kanaler, målgruppe, rolle/ansvar m.m." aria-label="Vis hovedprocessens oplysninger">${IC_INFO}</button>`;
 /* undertekst på hovedproces-kortet i Emne: i-knap, pile, antal delprocesser og vurderinger */
 const FORUD_TAG='<span class="lvl fu" title="Forudsætningsydelse">Forudsætningsydelse</span>';
-const mainMeta=(m,n,mmv)=>`${mmv||''}${mainInfoBtn(m.id)}${plural(n,'delproces','delprocesser')}${m.forud?FORUD_TAG:''}${lvlTag(DOK_VALUES,m.dok)}${lvlTag(ENS_VALUES,m.ens)}`;
+const mainMeta=(m,n,mmv)=>`${mmv||''}${mainInfoBtn(m.id)}${plural(n,'delproces','delprocesser')}${lvlTag(DOK_VALUES,m.dok)}${lvlTag(ENS_VALUES,m.ens)}`;
 /* samlet RACI for hovedprocessens delprocesser: rolle → [{id, n = antal delprocesser}] */
 function mainAgg(mid,keys){
   const subs=subsOfMain(mid),out={};
