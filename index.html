@@ -549,6 +549,7 @@
     <div class="tb-row">
     <input type="search" id="f-q" placeholder="Søg i delprocesser…" aria-label="Søg">
     <button class="btn primary" id="btn-new"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Ny delproces</button>
+    <button class="btn" id="btn-katalog" onclick="downloadYdelseskatalog()" title="Download ydelseskataloget som Excel-ark (ydelse = procesområde, delydelse = hovedproces)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download ydelseskatalog</button>
     <div class="menu-wrap" id="data-wrap">
       <button class="btn" id="btn-data">Data <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="menu" id="data-menu">
@@ -1959,6 +1960,81 @@ function exportXLSX(){
       'Dokumentation af ydelse':(lvlOf(DOK_VALUES,m.dok)||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,m.ens)||{}).l||''})),'Struktur',W([14,26,14,34,60,30,30,50,40,40,60]));
     XLSX.writeFile(wb,'proceslandskab.xlsx');
   }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
+}
+
+/* ============================================================
+   YDELSESKATALOG — Excel i KU's skabelon (ydelse = procesområde, delydelse = hovedproces)
+   Formateringen kræver ExcelJS, som hentes første gang der klikkes.
+   Rolle/ansvar og Procesejerskab samles fra delprocessernes RACI — kun funktioner/enheder, aldrig navne.
+   ============================================================ */
+const KAT_COLORS={group:'FF67817F',head:'FFA4B3B2',body:'FFF8F5E7',line:'FF000000',white:'FFFFFFFF'};
+const EXCELJS_URL='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+function loadExcelJS(){
+  if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+  return new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=EXCELJS_URL;
+    sc.onload=()=>window.ExcelJS?res(window.ExcelJS):rej(new Error('Excel-biblioteket kunne ikke indlæses'));
+    sc.onerror=()=>rej(new Error('Excel-biblioteket kunne ikke hentes'));document.head.appendChild(sc);});
+}
+const katClean=t=>String(t||'').replace(/[​‌‍﻿]/g,'').replace(/\s+/g,' ').trim();
+/* niveau ud fra enhedens navn: A = koncern, B = campus, C = fakultet/institut */
+function katLevel(id){
+  const n=katClean(rawAnyName(id)),r=regOf(id);
+  if(/^koncern\b|\(koncern\)|^ku kom\b|^rekstab\b/i.test(n))return 'A';
+  if(/^(frb\+|nørre|søndre)\b|\(ca\)/i.test(n))return 'B';
+  if(r==='unitsFak')return 'C';
+  return r==='unitsUdd'?'B':'A';
+}
+const KAT_LEVELS=[['A','A. Koncernniveau'],['B','B. Campusniveau'],['C','C. Fakultet/institut']];
+function katRoles(m){
+  const g=mainAgg(m.id,YD_ROLE_KEYS),out=[];
+  const groups=[['Udførende',['RU','RA','RF']],['Konsulteres',['C']],['Informeres',['I']]];
+  KAT_LEVELS.forEach(([lv,lab])=>{
+    const lines=groups.map(([name,keys])=>{const ids=[];keys.forEach(k=>g[k].forEach(x=>{if(katLevel(x.id)===lv&&!ids.includes(x.id))ids.push(x.id);}));
+      return ids.length?`${name}: ${ids.map(id=>katClean(rawAnyName(id))).join(', ')}`:'';}).filter(Boolean);
+    if(lines.length)out.push(lab+'\n'+lines.join('\n'));
+  });
+  return out.join('\n\n');
+}
+function katOwners(m){
+  const g=mainAgg(m.id,YD_OWNER_KEYS);
+  return YD_OWNER_KEYS.filter(k=>g[k].length).map(k=>`${roleDef(k).label}: ${g[k].map(x=>katClean(rawAnyName(x.id))).join(', ')}`).join('\n');
+}
+async function downloadYdelseskatalog(){
+  const btn=$('btn-katalog');if(btn)btn.disabled=true;
+  try{
+    const ExcelJS=await loadExcelJS();
+    const wb=new ExcelJS.Workbook();wb.creator='Proceslandskab · KU Uddannelsesadministrationen';wb.created=new Date();
+    const ws=wb.addWorksheet('Ydelseskatalog',{views:[{state:'frozen',xSplit:2,ySplit:2}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9}});
+    const COLS=[['Ydelse',22],['Delydelse',28],['Beskrivelse',60],['Kanaler',30],['Ydelsens målgruppe',32],['Roller/ansvar',52],['Procesejerskab',34],['Dokumentation af ydelse',28],['Ensartet opgaveløsning vedr. ydelse',34]];
+    ws.columns=COLS.map(([,w])=>({width:w}));
+    const font={name:'Arial',size:10};
+    const border={top:{style:'thin',color:{argb:KAT_COLORS.line}},left:{style:'thin',color:{argb:KAT_COLORS.line}},bottom:{style:'thin',color:{argb:KAT_COLORS.line}},right:{style:'thin',color:{argb:KAT_COLORS.line}}};
+    const fill=c=>({type:'pattern',pattern:'solid',fgColor:{argb:c}});
+    /* række 1: grupper */
+    const r1=ws.getRow(1);r1.height=30;
+    [['Beskrivelse',1,4],['Ansvar og organisering',5,7],['Modenhed og standardisering',8,9]].forEach(([t,a,b])=>{
+      ws.mergeCells(1,a,1,b);const c=ws.getCell(1,a);c.value=t;
+      for(let i=a;i<=b;i++){const x=ws.getCell(1,i);x.fill=fill(KAT_COLORS.group);x.border=border;x.font={...font,bold:true,color:{argb:KAT_COLORS.white}};x.alignment={vertical:'middle',horizontal:'left',indent:1};}
+    });
+    /* række 2: kolonneoverskrifter */
+    const r2=ws.getRow(2);r2.height=42;
+    COLS.forEach(([t],i)=>{const c=ws.getCell(2,i+1);c.value=t;c.fill=fill(KAT_COLORS.head);c.border=border;c.font={...font,bold:true,color:{argb:KAT_COLORS.white}};c.alignment={vertical:'middle',horizontal:'left',wrapText:true,indent:1};});
+    /* data: én række pr. hovedproces, i procesområdernes og hovedprocessernes rækkefølge */
+    let n=0;
+    db.areas.forEach(a=>db.mains.filter(m=>m.area===a.id).forEach(m=>{
+      const row=ws.addRow([katClean(a.name),katClean(m.title),m.beskrivelse||'',m.kanaler||'',m.maalgruppe||'',katRoles(m),katOwners(m),
+        (lvlOf(DOK_VALUES,m.dok)||{}).l||'',(lvlOf(ENS_VALUES,m.ens)||{}).l||'']);
+      row.eachCell({includeEmpty:true},c=>{c.fill=fill(KAT_COLORS.body);c.border=border;c.font=font;c.alignment={vertical:'top',horizontal:'left',wrapText:true};});
+      n++;
+    }));
+    ws.autoFilter={from:{row:2,column:1},to:{row:2+n,column:COLS.length}};
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob),el=document.createElement('a');
+    el.href=url;el.download=`ydelseskatalog_${new Date().toISOString().slice(0,10)}.xlsx`;document.body.appendChild(el);el.click();el.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+  }catch(e){alert('Kunne ikke lave ydelseskataloget: '+e.message);}
+  finally{if(btn)btn.disabled=false;}
 }
 /* læs en Excel-fil og kald fn(workbook); fejl vises med errMsg(e) */
 function readXlsx(file,fn,errMsg){
