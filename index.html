@@ -1345,11 +1345,11 @@ function renderMainView(){
       </div>`:''}
     </div>
     <div class="dr-body">
-      <div class="field"><div class="k">Forudsætningsydelse</div><div class="v">${m.forud?'<span class="lvl fu">Ja</span>':'Nej'}</div></div>
-      ${txt('Beskrivelse',m.beskrivelse)}${txt('Kanaler',m.kanaler)}${txt('Ydelsens målgruppe',m.maalgruppe)}
-      <div class="field"><div class="k">Rolle/ansvar · samlet fra delprocesserne</div>${calc(YD_ROLE_KEYS)}</div>
-      <div class="field"><div class="k">Procesejerskab · samlet fra delprocesserne</div>${calc(YD_OWNER_KEYS)}</div>
-      ${lvl('Dokumentation af ydelse',DOK_VALUES,m.dok)}${lvl('Ensartet opgaveløsning vedr. ydelse',ENS_VALUES,m.ens)}
+      <div class="field"><div class="k">Forudsætning</div><div class="v">${m.forud?'<span class="lvl fu">Ja</span>':'Nej'}</div></div>
+      ${txt('Beskrivelse',m.beskrivelse)}${txt('Kanaler',m.kanaler)}${txt('Målgruppe',m.maalgruppe)}
+      <div class="field"><div class="k">Rolle/Ansvar</div>${calc(YD_ROLE_KEYS)}</div>
+      <div class="field"><div class="k">Procesejerskab</div>${calc(YD_OWNER_KEYS)}</div>
+      ${lvl('Dokumentation',DOK_VALUES,m.dok)}${lvl('Ensartethed i opgaveløsning',ENS_VALUES,m.ens)}
       <div class="field"><div class="k">Delprocesser (${subs.length})</div>${subs.length?`<div class="ydsubs">${subs.map(s=>`<div class="ydsub" onclick="openDrawer('${jsq(s.id)}')" title="Åbn delprocessen"><span>${esc(s.title)}</span>${ltName(s)?`<small>${esc(ltName(s))}</small>`:''}</div>`).join('')}</div>`:NOT_SET}</div>
     </div>`;
 }
@@ -1378,13 +1378,13 @@ function renderMainEdit(){
     <div class="dr-body frm">
       <label>Hovedprocessens navn</label><input type="text" value="${esc(m.title)}" oninput="mainEditBuf.title=this.value">
       <label>Procesområde</label><select onchange="mainEditBuf.area=this.value">${db.areas.map(a=>opt(a.id,a.name,m.area)).join('')}</select>
-      <label class="chk"><input type="checkbox" ${m.forud?'checked':''} onchange="mainEditBuf.forud=this.checked">Forudsætningsydelse</label>
+      <label class="chk"><input type="checkbox" ${m.forud?'checked':''} onchange="mainEditBuf.forud=this.checked">Forudsætning</label>
       <label>Beskrivelse</label>${ta('beskrivelse','')}
       <label>Kanaler</label>${ta('kanaler','Fx mail, telefon, fremmøde, KUnet …')}
-      <label>Ydelsens målgruppe</label>${ta('maalgruppe','Fx studerende, undervisere, institutter …')}
-      <label>Dokumentation af ydelse</label>${sel('dok',DOK_VALUES)}
-      <label>Ensartet opgaveløsning vedr. ydelse</label>${sel('ens',ENS_VALUES)}
-      <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Rolle/ansvar og Procesejerskab udfyldes ikke her — de samles automatisk fra RACI på hovedprocessens delprocesser.</div>
+      <label>Målgruppe</label>${ta('maalgruppe','Fx studerende, undervisere, institutter …')}
+      <label>Dokumentation</label>${sel('dok',DOK_VALUES)}
+      <label>Ensartethed i opgaveløsning</label>${sel('ens',ENS_VALUES)}
+      <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Rolle/Ansvar og Procesejerskab udfyldes ikke her — de samles automatisk fra RACI på hovedprocessens delprocesser.</div>
     </div>`;
 }
 function mainDiff(a,b){
