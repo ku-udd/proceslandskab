@@ -298,6 +298,25 @@
   .lkeys{font-size:11.5px;color:var(--faint);margin-left:auto}
   .lkeys kbd{font:inherit;font-size:10.5px;border:1px solid var(--line-strong);border-radius:4px;padding:0 4px;background:var(--surface)}
 
+  /* ============ YDELSE (ydelse → delydelse) ============ */
+  .ydhead,.ydrow{display:grid;grid-template-columns:26px 2fr 1.15fr 1.15fr 18px;gap:12px;align-items:center}
+  .ydhead{padding:8px 16px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  .ydrow{padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .ydrow:hover{background:var(--surface-2)}
+  .lvl{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .lvl.g{background:#e2f0d9;color:#2f6a2a}.lvl.y{background:#fff2cc;color:#7a5a00}.lvl.r{background:#fbe1dc;color:#9a2f1c}
+  .ydsum{font-size:11px;color:var(--faint);margin-left:2px;font-variant-numeric:tabular-nums}
+  .pill.sublink{cursor:pointer}
+  .pill.sublink:hover{border-color:var(--wine);color:var(--wine)}
+  .pills{display:flex;flex-wrap:wrap;gap:6px}
+  .ydsubs{display:flex;flex-direction:column}
+  .ydsub{display:flex;flex-direction:column;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;cursor:pointer}
+  .ydsub:last-child{border-bottom:0}
+  .ydsub small{color:var(--faint);font-size:11.5px}
+  .ydsub:hover{color:var(--wine)}
+  .v.pre{white-space:pre-wrap}
+  @media(max-width:760px){.ydhead,.ydrow{grid-template-columns:26px 1.6fr 1fr 18px}.ydhead .c-ens,.ydrow .c-ens{display:none}}
+
   /* ============ ENHEDSLAG (opgaveoverblik pr. UDD-enhed) ============ */
   .pill.unitlink{cursor:pointer}
   .pill.unitlink:hover{border-color:var(--wine);color:var(--wine)}
@@ -513,6 +532,7 @@
       <button class="btn" id="btn-auth">Log ind</button>
       <div class="seg" role="tablist" aria-label="Visning">
       <button role="tab" data-view="landskab" aria-selected="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2.5 2.5 7.5 12 12.5l9.5-5z"/><path d="M2.5 12.5 12 17.5l9.5-5"/><path d="M2.5 17.5 12 22.5l9.5-5"/></svg>Emne</button>
+      <button role="tab" data-view="ydelse" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 7.5 12 3 3 7.5v9L12 21l9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/></svg>Ydelse</button>
       <button role="tab" data-view="matrix" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>Tvær</button>
         <button role="tab" data-view="enhed" aria-selected="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>Linje</button>
         <button role="tab" data-view="liste" id="tab-liste" aria-selected="false" style="display:none"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg>Liste</button>
@@ -680,11 +700,14 @@ function landRows(){
     mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i})),
     subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i})),
     registry:reg,
+    ...(ydTableOk?{delydelser:db.delydelser.map((d,i)=>({id:d.id,area:d.area||null,name:d.name,pos:i,beskrivelse:d.beskrivelse||null,kanaler:d.kanaler||null,maalgruppe:d.maalgruppe||null,dokumentation:d.dok||null,ensartet:d.ens||null,subs:d.subs||[]}))}:{}),
     landskab_settings:[{id:'ls',vd:(db.ledelse&&db.ledelse.vd)||null,uc:(db.ledelse&&db.ledelse.uc)||null}],
     landskab_log:(db.log||[]).map(e=>({id:e.id,t:e.t,who:e.who||null,msg:e.msg}))
   };
 }
 let landSnap=null;
+/* tabellen delydelser findes først, når SQL-scriptet delydelser.sql er kørt i Supabase */
+let ydTableOk=false,ydWarned=false;
 /* skriv forskellen mellem current (tabel→rækker) og snap; scopeCol/scopeVal begrænser sletninger (enhedstabeller) */
 async function syncTables(current,snap,scopeCol,scopeVal){
   const out={};
@@ -729,6 +752,9 @@ async function loadDb(){
       rg.forEach(x=>{if(!nd[x.reg])return;const o=REGS[x.reg]&&REGS[x.reg].parent?{id:x.id,name:x.name,parent:x.parent||''}:{id:x.id,name:x.name};if(x.reg==='unitsUdd'){o.sl=x.section_leader||'';o.uc=x.education_chief||'';}nd[x.reg].push(o);});
       const lsr=(!ls.error&&ls.data&&ls.data[0])||null;
       nd.ledelse={vd:(lsr&&lsr.vd)||'',uc:(lsr&&lsr.uc)||''};
+      const yd=await sb.from('delydelser').select('*').order('pos',{ascending:true});
+      if(yd.error){ydTableOk=false;nd.delydelser=[];console.warn('Tabellen delydelser kunne ikke hentes — kør delydelser.sql i Supabase:',yd.error.message);}
+      else{ydTableOk=true;nd.delydelser=(yd.data||[]).map(x=>({id:x.id,area:x.area||'',name:x.name||'',beskrivelse:x.beskrivelse||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||'',subs:Array.isArray(x.subs)?x.subs:[]}));}
       db=nd;loaded=true;
     }catch(e){console.warn('Kunne ikke hente fra Supabase:',e);}
     await loadPlanIndex();
@@ -744,6 +770,8 @@ async function saveDb(){
   setSaveStatus('saving');
   lsSet(STORE_KEY,db);
   if(!sb){if(my===saveSeq)setSaveStatus('error');return;}
+  if(!ydTableOk&&db.delydelser.length&&!ydWarned){ydWarned=true;
+    alert('Delydelser kan ikke gemmes i databasen endnu, fordi tabellen »delydelser« mangler i Supabase.\n\nKør SQL-scriptet delydelser.sql i Supabase (SQL Editor) og genindlæs siden. Indtil da ligger delydelserne kun i denne browser.');}
   try{
     landSnap=await syncTables(landRows(),landSnap);
     if(my===saveSeq)setSaveStatus('saved');
@@ -793,7 +821,8 @@ const PARENT_FIELD={delkap:'kap',arbfael:'lederteam'};
 function syncChild(s,field,val){const c=CHILD_OF[field];if(!c)return;const x=db[c[1]].find(y=>y.id===s[c[0]]);if(x&&x.parent&&x.parent!==val)s[c[0]]='';}
 
 function normalizeDb(){
-  ['areas','mains','subs',...REG_KEYS,'log'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+  ['areas','mains','subs',...REG_KEYS,'log','delydelser'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+  db.delydelser.forEach(d=>{['area','name','beskrivelse','kanaler','maalgruppe','dok','ens'].forEach(f=>{if(typeof d[f]!=='string')d[f]=d[f]==null?'':String(d[f]);});if(!Array.isArray(d.subs))d.subs=[];});
   if(!db.ledelse||typeof db.ledelse!=='object')db.ledelse={vd:'',uc:''};
   ['vd','uc'].forEach(k=>{if(typeof db.ledelse[k]!=='string')db.ledelse[k]='';});
   db.subs.forEach(s=>{
@@ -1041,10 +1070,10 @@ function raciTags(s,uid){
 let drawerId=null,editBuf=null;
 const NOT_SET='<span class="v empty">Ikke udfyldt</span>';
 const vOr=t=>t?esc(t):NOT_SET;
-function openDrawer(id){drawerId=id;editBuf=null;renderDrawerView();openScrim();}
+function openDrawer(id){drawerId=id;editBuf=null;ydDrawer=null;ydEditBuf=null;renderDrawerView();openScrim();}
 function setScrim(on){$('drawer').classList.toggle('open',on);$('drawer').setAttribute('aria-hidden',on?'false':'true');$('scrim').classList.toggle('open',on);}
 function openScrim(){setScrim(true);}
-function closeDrawer(){setScrim(false);drawerId=null;editBuf=null;uDrawerTask=null;uEditBuf=null;}
+function closeDrawer(){setScrim(false);drawerId=null;editBuf=null;uDrawerTask=null;uEditBuf=null;ydDrawer=null;ydEditBuf=null;}
 
 function renderDrawerView(){
   const s=db.subs.find(x=>x.id===drawerId);if(!s)return closeDrawer();
@@ -1068,15 +1097,16 @@ function renderDrawerView(){
       <div class="field row2">${field('Procesområde',esc(area(oid).name),` style="color:${areaColor(oid)}"`)}${field('Hovedproces',esc(m.title))}</div>
       <div class="field row2">${field('Lederteam',vOr(ltName(s)))}${field('Arbejdsfællesskab',vOr(afName(s)))}</div>
       <div class="field"><div class="k">Ansvar og involvering (RACI)</div><div class="raci-grid">${ROLE_KEYS.map(racLine).join('')}</div></div>
+      <div class="field"><div class="k">Delydelser</div>${(()=>{const yds=ydOfSub(s.id);return yds.length?`<div class="pills">${yds.map(d=>`<span class="pill sublink" role="button" tabindex="0" title="Åbn delydelsen" onclick="openYd('${jsq(d.id)}')">${esc(d.name)} →</span>`).join('')}</div>`:NOT_SET;})()}</div>
       ${(s.status||s.note)?`<div class="field"><div class="k">Ændring ift. tidligere proceslandskab</div><div class="v">${s.status?statusTag(s.status)+' ':''}${s.note?esc(s.note):''}</div></div>`:''}
     </div>`;
 }
-function startEdit(){if(!canEdit())return showLogin();editBuf=clone(db.subs.find(x=>x.id===drawerId));normalizeSub(editBuf);renderDrawerEdit();}
+function startEdit(){if(!canEdit())return showLogin();editBuf=clone(db.subs.find(x=>x.id===drawerId));normalizeSub(editBuf);editBuf._yd=ydOfSub(editBuf.id).map(d=>d.id);renderDrawerEdit();}
 function normalizeSub(s){if(!s.roles)s.roles={};ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});}
 function newSub(mid){if(!canEdit())return showLogin();
   const id='d'+Date.now();
-  editBuf={id,main:mid||(db.mains[0]&&db.mains[0].id)||'',title:'',kap:'',delkap:'',lederteam:'',arbfael:'',roles:{},status:'',note:''};
-  normalizeSub(editBuf);drawerId=id;renderDrawerEdit();openScrim();
+  editBuf={id,main:mid||(db.mains[0]&&db.mains[0].id)||'',title:'',kap:'',delkap:'',lederteam:'',arbfael:'',roles:{},status:'',note:'',_yd:[]};
+  normalizeSub(editBuf);drawerId=id;ydDrawer=null;ydEditBuf=null;renderDrawerEdit();openScrim();
 }
 function renderDrawerEdit(){
   const s=editBuf,isNew=!db.subs.some(x=>x.id===s.id),aid=editAreaId();
@@ -1097,10 +1127,11 @@ function renderDrawerEdit(){
       <div class="two">${lab('Procesområde',`<select onchange="setEditArea(this.value)">${db.areas.map(a=>opt(a.id,a.name,aid)).join('')}</select>`)}${lab('Hovedproces','<div id="main-select"></div>')}</div>
       <div class="two">${lab('Lederteam',regSelect('leaderteams','lederteam',s.lederteam))}${lab('Arbejdsfællesskab',childSelect('workgroups','arbfael',s))}</div>
       <label>Ansvar og involvering (RACI)</label><div id="roles-edit"></div>
+      <label>Delydelser</label><div id="yd-edit"></div>
       <div class="two">${lab('Ændringsstatus',`<select onchange="editBuf.status=this.value"><option value="">Ikke angivet</option>${STATUS_VALUES.map(v=>opt(v,v,s.status||'')).join('')}</select>`)}</div>
       <label>Ændringsbeskrivelse</label><textarea rows="4" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)" oninput="editBuf.note=this.value">${esc(s.note||'')}</textarea>
     </div>`;
-  renderMainSelect();renderRolesEdit();
+  renderMainSelect();renderRolesEdit();renderSubYdEdit();
 }
 function editAreaId(){
   if(editBuf._area&&db.areas.some(a=>a.id===editBuf._area))return editBuf._area;
@@ -1187,6 +1218,7 @@ function saveSub(){
     if(!confirm(planIndex[editBuf.id].size+' enhed(er) har opgaver på delprocessen. Omdøb alligevel? (Enhedernes opgaver følger med delprocessen.)'))return;
   }
   delete editBuf._area;
+  const ydSel=editBuf._yd;delete editBuf._yd;
   editBuf.note=String(editBuf.note||'').trim();if(!STATUS_VALUES.includes(editBuf.status))editBuf.status='';
   const idx=db.subs.findIndex(x=>x.id===editBuf.id);
   if(idx>=0){
@@ -1194,6 +1226,7 @@ function saveSub(){
     if(ch.length)logChange('Redigerede delprocessen '+qt(editBuf.title)+': '+ch.join(', '));
     db.subs[idx]=clone(editBuf);
   }else{db.subs.push(clone(editBuf));logChange('Oprettede delprocessen '+qt(editBuf.title)+' under '+qt(mainById(editBuf.main).title));}
+  if(ydSel)applySubYd(editBuf.id,editBuf.title,ydSel);
   ui.openMains.add(editBuf.main);drawerId=editBuf.id;editBuf=null;saveDb();render();renderDrawerView();
 }
 /* kort beskrivelse af hvad der er ændret på en delproces */
@@ -1222,6 +1255,7 @@ function deleteSub(){
   if(!confirm(`Slet delprocessen "${s.title}"?`+warn))return;
   logChange('Slettede delprocessen '+qt(s.title)+(units.length?' (inkl. enhedernes opgaver)':''));
   db.subs=db.subs.filter(x=>x.id!==drawerId);
+  db.delydelser.forEach(d=>{d.subs=(d.subs||[]).filter(x=>x!==s.id);});
   if(units.length)purgeUnitTasks(s.id);
   saveDb();closeDrawer();render();
 }
@@ -1240,6 +1274,205 @@ async function purgeUnitTasks(sid){
 /* byt x med naboen (dir ±1) blandt sibs inde i arr; false hvis ved kanten */
 function swapWithin(arr,x,sibs,dir){const si=sibs.indexOf(x),ti=si+dir;if(ti<0||ti>=sibs.length)return false;const gi=arr.indexOf(x),gj=arr.indexOf(sibs[ti]);arr[gi]=arr[gj];arr[gj]=x;return true;}
 function moveSub(id,dir){if(!canEdit())return showLogin();const s=db.subs.find(x=>x.id===id);if(!s)return;if(!swapWithin(db.subs,s,db.subs.filter(x=>x.main===s.main),dir))return;logChange('Flyttede delprocessen '+qt(s.title)+' '+dirWord(dir));saveDb();render();}
+
+/* ============================================================
+   VISNING — YDELSE (ydelse → delydelse)
+   Ydelserne er procesområderne. En delydelse hører til én ydelse og kan
+   tilknyttes vilkårligt mange delprocesser (gemmes på delydelsen i subs).
+   Rolle/ansvar og Procesejerskab udfyldes ikke — de samles fra RACI på de
+   tilknyttede delprocesser.
+   ============================================================ */
+const DOK_VALUES=[
+  {v:'1',l:'1 – Ydelsen er pt. ikke dokumenteret',s:'Ikke dokumenteret',c:'r'},
+  {v:'2',l:'2 – Ydelsen er pt. delvist dokumenteret',s:'Delvist dokumenteret',c:'y'},
+  {v:'3',l:'3 – Ydelsen er pt. fuldt dokumenteret',s:'Fuldt dokumenteret',c:'g'}];
+const ENS_VALUES=[
+  {v:'1',l:'1 – Ydelsen leveres pt. helt standardiseret og ensartet på tværs af Campus administrationer',s:'Helt standardiseret',c:'g'},
+  {v:'2',l:'2 – Ydelsen leveres pt. delvis standardiseret og ensartet på tværs af Campus administrationer',s:'Delvis standardiseret',c:'y'},
+  {v:'3',l:'3 – Ydelsen leveres pt. ikke standardiseret på tværs af Campus administrationer',s:'Ikke standardiseret',c:'r'}];
+const lvlOf=(list,v)=>list.find(x=>x.v===String(v||''));
+const lvlTag=(list,v)=>{const x=lvlOf(list,v);return x?`<span class="lvl ${x.c}" title="${esc(x.l)}">${esc(x.s)}</span>`:'<span class="cellnames empty">—</span>';};
+const lvlParse=v=>{const m=String(v==null?'':v).trim().match(/^[123]/);return m?m[0]:'';};
+const YD_ROLE_KEYS=['RU','RA','RF','C','I'];   /* Rolle/ansvar */
+const YD_OWNER_KEYS=['PE','DE'];                /* Procesejerskab: procesejer + udførende leder */
+const ydById=id=>db.delydelser.find(d=>d.id===id);
+const ydOfArea=aid=>db.delydelser.filter(d=>d.area===aid);
+const ydOfSub=sid=>db.delydelser.filter(d=>(d.subs||[]).includes(sid));
+const ydSubs=d=>(d.subs||[]).map(id=>db.subs.find(s=>s.id===id)).filter(Boolean);
+/* samlet RACI for de tilknyttede delprocesser: rolle → [{id, n = antal delprocesser}] */
+function ydAgg(d,keys){
+  const subs=ydSubs(d),out={};
+  keys.forEach(k=>{const cnt=new Map();subs.forEach(s=>roleIds(s,k).forEach(id=>cnt.set(id,(cnt.get(id)||0)+1)));out[k]=[...cnt].map(([id,n])=>({id,n}));});
+  return out;
+}
+/* filtre: procesområde = ydelse; lederteam/procesejer/enhed matcher via de tilknyttede delprocesser; søgning i delydelsens tekster */
+function matchYd(d){
+  if(filters.area.length&&!filters.area.includes(d.area))return false;
+  if(filters.lt.length||filters.pe.length||filters.unit.length){
+    const q=filters.q;filters.q='';
+    const ok=ydSubs(d).some(matchSub);
+    filters.q=q;if(!ok)return false;
+  }
+  if(filters.q){
+    const hay=[d.name,d.beskrivelse,d.kanaler,d.maalgruppe,area(d.area).name,...ydSubs(d).map(s=>s.title)].join(' ').toLowerCase();
+    if(!hay.includes(filters.q.toLowerCase()))return false;
+  }
+  return true;
+}
+const subCount=n=>n?plural(n,'tilknyttet delproces','tilknyttede delprocesser'):'Ingen delprocesser tilknyttet';
+function renderYdelse(){
+  if(appEmpty())return EMPTY_APP;
+  const force=anyFilter();
+  const yds=db.delydelser.filter(matchYd);
+  const areasShown=force?db.areas.filter(a=>yds.some(d=>d.area===a.id)):db.areas;
+  const linked=new Set(yds.flatMap(d=>ydSubs(d).map(s=>s.id)));
+  let h=viewHead('Ydelser',`${plural(areasShown.length,'ydelse','ydelser')} · ${plural(yds.length,'delydelse','delydelser')} · ${plural(linked.size,'tilknyttet delproces','tilknyttede delprocesser')}`);
+  if(!areasShown.length)return h+(force?emptyState('Ingen delydelser matcher filtrene','Justér søgning eller filtre.')
+    :emptyState('Ingen ydelser endnu','Ydelserne er procesområderne — opret dem under <em>Data → Struktur &amp; organisation</em>.'));
+  const head=`<div class="ydhead"><div></div><div>Delydelse</div><div>Dokumentation</div><div class="c-ens">Ensartet opgaveløsning</div><div></div></div>`;
+  areasShown.forEach(a=>{
+    const all=ydOfArea(a.id),ds=all.filter(matchYd);
+    const rows=ds.map(d=>{
+      const pos=all.indexOf(d);
+      const mv=canEdit()&&!force?`<button ${pos===0?'disabled':''} title="Flyt op" onclick="event.stopPropagation();moveYd('${jsq(d.id)}',-1)">${arrow(13,2.5,1)}</button>
+        <button ${pos===all.length-1?'disabled':''} title="Flyt ned" onclick="event.stopPropagation();moveYd('${jsq(d.id)}',1)">${arrow(13,2.5,0)}</button>`:'';
+      return `<div class="ydrow" onclick="openYd('${jsq(d.id)}')"><div class="movecol">${mv}</div>
+        <div class="opname">${esc(d.name)}<small>${subCount(ydSubs(d).length)}</small></div>
+        <div>${lvlTag(DOK_VALUES,d.dok)}</div><div class="c-ens">${lvlTag(ENS_VALUES,d.ens)}</div>${ARROW_R}</div>`;
+    }).join('');
+    const add=canEdit()?`<button class="addsub" onclick="newYd('${jsq(a.id)}')">+ Tilføj delydelse</button>`:'';
+    const inner=`<div class="maincard open flatcard"><div class="mwrap">${ds.length?head+rows:'<div class="usubempty" style="padding:12px 16px">Ingen delydelser endnu.</div>'}${add}</div></div>`;
+    const key='yd>'+a.id,nLinked=new Set(ds.flatMap(d=>ydSubs(d).map(s=>s.id))).size;
+    h+=branch(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,areaColor(a.id),a.name,`${plural(ds.length,'delydelse','delydelser')} · ${plural(nLinked,'tilknyttet delproces','tilknyttede delprocesser')}`,inner);
+  });
+  return h;
+}
+
+/* ---------- drawer: delydelse ---------- */
+let ydDrawer=null,ydEditBuf=null;
+function openYd(id){drawerId=null;editBuf=null;uDrawerTask=null;uEditBuf=null;ydDrawer=id;ydEditBuf=null;renderYdView();openScrim();}
+function renderYdView(){
+  const d=ydById(ydDrawer);if(!d)return closeDrawer();
+  const subs=ydSubs(d),agg=ydAgg(d,[...YD_ROLE_KEYS,...YD_OWNER_KEYS]);
+  const aggLine=k=>{const def=roleDef(k),list=agg[k],hint=roleHint(def);
+    return `<div class="raci-line"><div class="rl-key"><span class="racitag raci-${def.r}">${def.r}</span><span><b>${esc(def.label)}</b>${hint?`<span style="color:var(--faint)">${esc(hint)}</span>`:''}</span></div>
+      <div class="rl-people">${list.length?list.map(x=>`<span class="pill" title="${esc(refName(k,x.id))} — på ${x.n} af ${subs.length} tilknyttede delprocesser"><span class="avatar" style="width:18px;height:18px;font-size:9px">${initials(refName(k,x.id))}</span>${esc(refName(k,x.id))}${subs.length>1?`<span class="ydsum">${x.n}/${subs.length}</span>`:''}</span>`).join(''):'<span class="rl-none">Ikke udfyldt</span>'}</div></div>`;};
+  const calc=keys=>subs.length?`<div class="raci-grid">${keys.map(aggLine).join('')}</div>`:'<span class="v empty">Samles automatisk, når der er tilknyttet delprocesser.</span>';
+  const txt=(k,v)=>`<div class="field"><div class="k">${k}</div><div class="v pre">${v?esc(v):NOT_SET}</div></div>`;
+  const lvl=(k,list,v)=>{const x=lvlOf(list,v);return `<div class="field"><div class="k">${k}</div><div class="v">${x?`${lvlTag(list,v)}<div style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(x.l)}</div>`:NOT_SET}</div></div>`;};
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="closeDrawer()" aria-label="Luk">×</button>
+      <div class="crumb" style="color:${areaColor(d.area)}">Delydelse · ${esc(area(d.area).name)}</div>
+      <h2>${esc(d.name)}</h2>
+      ${canEdit()?`<div class="dr-actions">
+        <button class="btn primary" onclick="startYdEdit()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Rediger</button>
+        <button class="btn danger" onclick="deleteYd()">Slet</button>
+      </div>`:''}
+    </div>
+    <div class="dr-body">
+      ${txt('Beskrivelse',d.beskrivelse)}${txt('Kanaler',d.kanaler)}${txt('Ydelsens målgruppe',d.maalgruppe)}
+      <div class="field"><div class="k">Rolle/ansvar · samlet fra delprocesserne</div>${calc(YD_ROLE_KEYS)}</div>
+      <div class="field"><div class="k">Procesejerskab · samlet fra delprocesserne</div>${calc(YD_OWNER_KEYS)}</div>
+      ${lvl('Dokumentation af ydelse',DOK_VALUES,d.dok)}${lvl('Ensartet opgaveløsning vedr. ydelse',ENS_VALUES,d.ens)}
+      <div class="field"><div class="k">Tilknyttede delprocesser (${subs.length})</div>${subs.length?`<div class="ydsubs">${subs.map(s=>`<div class="ydsub" onclick="openDrawer('${jsq(s.id)}')" title="Åbn delprocessen"><span>${esc(s.title)}</span><small>${esc(area(areaOfSub(s)).name)} · ${esc(mainById(s.main).title)}</small></div>`).join('')}</div>`:NOT_SET}</div>
+    </div>`;
+}
+function startYdEdit(){if(!canEdit())return showLogin();const d=ydById(ydDrawer);if(!d)return;ydEditBuf=clone(d);renderYdEdit();}
+function newYd(aid){
+  if(!canEdit())return showLogin();
+  drawerId=null;editBuf=null;
+  ydEditBuf={id:'yd'+Date.now().toString(36)+Math.floor(Math.random()*1e3),area:aid||firstArea()||'',name:'',beskrivelse:'',kanaler:'',maalgruppe:'',dok:'',ens:'',subs:[]};
+  ydDrawer=ydEditBuf.id;renderYdEdit();openScrim();
+}
+function renderYdEdit(){
+  const d=ydEditBuf,isNew=!ydById(d.id);
+  const ta=(f,ph)=>`<textarea rows="3" placeholder="${esc(ph)}" oninput="ydEditBuf.${f}=this.value">${esc(d[f]||'')}</textarea>`;
+  const sel=(f,list)=>`<select onchange="ydEditBuf.${f}=this.value"><option value="">Ikke angivet</option>${list.map(x=>opt(x.v,x.l,d[f]||'')).join('')}</select>`;
+  $('drawer').innerHTML=`
+    <div class="dr-head">
+      <button class="dr-close" onclick="cancelYdEdit()" aria-label="Luk">×</button>
+      <div class="crumb" style="color:var(--wine)">${isNew?'Ny delydelse':'Redigerer delydelse'}</div>
+      <h2>${isNew?'Ny delydelse':esc(d.name)}</h2>
+      <div class="dr-actions">
+        <button class="btn primary" onclick="saveYd()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Gem</button>
+        <button class="btn" onclick="cancelYdEdit()">Annullér</button>
+        ${isNew?'':'<button class="btn danger" onclick="deleteYd()">Slet</button>'}
+      </div>
+    </div>
+    <div class="dr-body frm">
+      <label>Delydelsens navn</label><input type="text" value="${esc(d.name)}" oninput="ydEditBuf.name=this.value">
+      <label>Ydelse</label><select onchange="ydEditBuf.area=this.value">${db.areas.map(a=>opt(a.id,a.name,d.area)).join('')}</select>
+      <label>Beskrivelse</label>${ta('beskrivelse','')}
+      <label>Kanaler</label>${ta('kanaler','Fx mail, telefon, fremmøde, KUnet …')}
+      <label>Ydelsens målgruppe</label>${ta('maalgruppe','Fx studerende, undervisere, ansøgere …')}
+      <label>Dokumentation af ydelse</label>${sel('dok',DOK_VALUES)}
+      <label>Ensartet opgaveløsning vedr. ydelse</label>${sel('ens',ENS_VALUES)}
+      <label>Tilknyttede delprocesser</label><div id="yd-subs-edit"></div>
+      <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Rolle/ansvar og Procesejerskab udfyldes ikke her — de samles automatisk fra RACI på de tilknyttede delprocesser.</div>
+    </div>`;
+  renderYdSubsEdit();
+}
+/* delprocesser grupperet pr. procesområde · hovedproces */
+function subPickerOptions(exclude){
+  return db.areas.map(a=>mainsOfArea(a.id).map(m=>{const ss=subsOfMain(m.id).filter(s=>!exclude.includes(s.id));
+    return ss.length?`<optgroup label="${esc(a.name+' · '+m.title)}">${ss.map(s=>`<option value="${esc(s.id)}">${esc(s.title)}</option>`).join('')}</optgroup>`:'';}).join('')).join('');
+}
+function renderYdSubsEdit(){
+  const ids=ydEditBuf.subs||[];
+  $('yd-subs-edit').innerHTML=`<div class="picker"><div class="chips">${ids.map(id=>{const s=db.subs.find(x=>x.id===id);return `<span class="pchip">${esc(s?s.title:id)}<button onclick="ydSubRemove('${jsq(id)}')" title="Fjern">×</button></span>`;}).join('')}</div>
+    <select onchange="ydSubAdd(this.value);this.value=''"><option value="">+ Tilknyt delproces…</option>${subPickerOptions(ids)}</select></div>`;
+}
+function ydSubAdd(id){if(!id)return;if(!ydEditBuf.subs.includes(id))ydEditBuf.subs.push(id);renderYdSubsEdit();}
+function ydSubRemove(id){ydEditBuf.subs=ydEditBuf.subs.filter(x=>x!==id);renderYdSubsEdit();}
+function saveYd(){
+  if(!canEdit())return showLogin();
+  const d=ydEditBuf;if(!d)return;
+  d.name=String(d.name||'').trim();
+  if(!d.name){alert('Giv delydelsen et navn.');return;}
+  if(!d.area){alert('Vælg hvilken ydelse delydelsen hører til.');return;}
+  ['beskrivelse','kanaler','maalgruppe'].forEach(f=>d[f]=String(d[f]||'').trim());
+  const i=db.delydelser.findIndex(x=>x.id===d.id);
+  if(i>=0){const ch=ydDiff(db.delydelser[i],d);if(ch.length)logChange('Redigerede delydelsen '+qt(d.name)+': '+ch.join(', '));db.delydelser[i]=clone(d);}
+  else{db.delydelser.push(clone(d));logChange('Oprettede delydelsen '+qt(d.name)+' under ydelsen '+qt(area(d.area).name));}
+  ui.openKeys.add('yd>'+d.area);ydDrawer=d.id;ydEditBuf=null;saveDb();render();renderYdView();
+}
+function ydDiff(a,b){
+  const ch=[],t=id=>{const s=db.subs.find(z=>z.id===id);return s?s.title:id;};
+  if(a.name!==b.name)ch.push('navn '+qt(a.name)+' → '+qt(b.name));
+  if(a.area!==b.area)ch.push('ydelse → '+qt(area(b.area).name));
+  [['beskrivelse','beskrivelse'],['kanaler','kanaler'],['maalgruppe','målgruppe']].forEach(([f,l])=>{if((a[f]||'')!==(b[f]||''))ch.push(l+' '+(b[f]?'opdateret':'slettet'));});
+  if((a.dok||'')!==(b.dok||''))ch.push('dokumentation → '+(b.dok||'(tom)'));
+  if((a.ens||'')!==(b.ens||''))ch.push('ensartet opgaveløsning → '+(b.ens||'(tom)'));
+  const x=a.subs||[],y=b.subs||[],add=y.filter(id=>!x.includes(id)).map(t),rem=x.filter(id=>!y.includes(id)).map(t);
+  if(add.length||rem.length)ch.push('delprocesser'+(add.length?' +'+add.join(', '):'')+(rem.length?' −'+rem.join(', '):''));
+  return ch;
+}
+function cancelYdEdit(){if(ydById(ydDrawer)){ydEditBuf=null;renderYdView();}else closeDrawer();}
+function deleteYd(){
+  if(!canEdit())return showLogin();
+  const d=ydById(ydDrawer);if(!d)return closeDrawer();
+  if(!confirm(`Slet delydelsen "${d.name}"? Tilknytningerne til delprocesserne fjernes også (selve delprocesserne slettes ikke).`))return;
+  db.delydelser=db.delydelser.filter(x=>x.id!==d.id);
+  logChange('Slettede delydelsen '+qt(d.name));saveDb();closeDrawer();render();
+}
+function moveYd(id,dir){if(!canEdit())return showLogin();const d=ydById(id);if(!d)return;if(!swapWithin(db.delydelser,d,ydOfArea(d.area),dir))return;logChange('Flyttede delydelsen '+qt(d.name)+' '+dirWord(dir));saveDb();render();}
+/* delydelser i delprocessens redigering (tilknytningen gemmes på delydelserne) */
+function renderSubYdEdit(){
+  const el=$('yd-edit');if(!el||!editBuf)return;
+  const ids=editBuf._yd||(editBuf._yd=[]);
+  const opts=db.areas.map(a=>{const ds=ydOfArea(a.id).filter(d=>!ids.includes(d.id));return ds.length?`<optgroup label="${esc(a.name)}">${ds.map(d=>`<option value="${esc(d.id)}">${esc(d.name)}</option>`).join('')}</optgroup>`:'';}).join('');
+  el.innerHTML=`<div class="picker"><div class="chips">${ids.map(id=>{const d=ydById(id);return `<span class="pchip">${esc(d?d.name:id)}<button onclick="subYdRemove('${jsq(id)}')" title="Fjern">×</button></span>`;}).join('')}</div>
+    ${db.delydelser.length?`<select onchange="subYdAdd(this.value);this.value=''"><option value="">+ Tilknyt delydelse…</option>${opts}</select>`:'<div style="font-size:12px;color:var(--faint)">Der er ingen delydelser endnu — de oprettes i fanen Ydelse.</div>'}</div>`;
+}
+function subYdAdd(id){if(!id||!editBuf)return;if(!editBuf._yd.includes(id))editBuf._yd.push(id);renderSubYdEdit();}
+function subYdRemove(id){if(!editBuf)return;editBuf._yd=editBuf._yd.filter(x=>x!==id);renderSubYdEdit();}
+function applySubYd(sid,title,ids){
+  const add=[],rem=[];
+  db.delydelser.forEach(d=>{d.subs=d.subs||[];const has=d.subs.includes(sid),want=ids.includes(d.id);
+    if(want&&!has){d.subs.push(sid);add.push(d.name);}else if(!want&&has){d.subs=d.subs.filter(x=>x!==sid);rem.push(d.name);}});
+  if(add.length||rem.length)logChange('Delydelser på delprocessen '+qt(title)+':'+(add.length?' +'+add.join(', '):'')+(rem.length?' −'+rem.join(', '):''));
+}
 
 /* ============================================================
    VISNING 4 — LISTE (regnearks-agtig bruttoliste: alle delprocesser × alle felter, kun for indloggede)
@@ -1635,8 +1868,8 @@ const hintBox=t=>`<div style="font-size:11.5px;color:var(--faint);margin-top:10p
 function renderSettings(){
   const m=$('settings');let body='';
   if(settingsTab==='areas'){
-    body=db.areas.map((a,i)=>`<div class="editline area"><span class="swatchsm" style="background:${areaColor(a.id)}"></span>${nameInput('areas',i,'name',a.name)}${mvBtns(i===0,i===db.areas.length-1,`moveArea(${i}`)}${delBtn(mainsOfArea(a.id).length,'Har hovedprocesser',`removeArea(${i})`)}</div>`).join('')
-      +`<button class="addlink" onclick="addArea()">+ Tilføj procesområde</button>`+hintBox('Rækkefølgen her styrer, hvordan procesområderne vises i Emne og Tvær — og hvilken farve de får.');
+    body=db.areas.map((a,i)=>`<div class="editline area"><span class="swatchsm" style="background:${areaColor(a.id)}"></span>${nameInput('areas',i,'name',a.name)}${mvBtns(i===0,i===db.areas.length-1,`moveArea(${i}`)}${delBtn(mainsOfArea(a.id).length||ydOfArea(a.id).length,'Har hovedprocesser eller delydelser',`removeArea(${i})`)}</div>`).join('')
+      +`<button class="addlink" onclick="addArea()">+ Tilføj procesområde</button>`+hintBox('Rækkefølgen her styrer, hvordan procesområderne vises i Emne og Tvær — og hvilken farve de får. I fanen Ydelse optræder procesområderne som ydelser.');
   }else if(settingsTab==='mains'){
     body=db.areas.map(a=>grpHead(a.name,areaColor(a.id))+
       mainsOfArea(a.id).map((mn,idx,arr)=>{const i=db.mains.findIndex(x=>x.id===mn.id);
@@ -1786,6 +2019,12 @@ function exportXLSX(){
     add(del,'Delprocesser',W([9,24,14,30,40,24,24,26,26,26,26,28,28,28,26,26,14,80]));
     REG_KEYS.forEach(r=>add(regSheet(r),REGS[r].sheet,W(REGS[r].parent?[9,34,30]:[9,34])));
     add(db.areas.map((a,i)=>({'Nr':i+1,'ID':a.id,'Navn':a.name})),'Procesområder',W([6,9,30]));
+    /* Rolle/ansvar og Procesejerskab er beregnede (funktioner — aldrig navne) og ignoreres ved import */
+    const aggTxt=(d,keys)=>{const g=ydAgg(d,keys);return keys.filter(k=>g[k].length).map(k=>roleDef(k).col+': '+g[k].map(x=>rawAnyName(x.id)).join(', ')).join(' | ');};
+    add(db.delydelser.map(d=>({'ID':d.id,'Ydelse':aN(d.area),'Delydelse':d.name,'Beskrivelse':d.beskrivelse||'','Kanaler':d.kanaler||'','Ydelsens målgruppe':d.maalgruppe||'',
+      'Rolle/ansvar (beregnet)':aggTxt(d,YD_ROLE_KEYS),'Procesejerskab (beregnet)':aggTxt(d,YD_OWNER_KEYS),
+      'Dokumentation af ydelse':(lvlOf(DOK_VALUES,d.dok)||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,d.ens)||{}).l||'',
+      "Delproces-ID'er":ydSubs(d).map(s=>s.id).join('; '),'Delprocesser':ydSubs(d).map(s=>s.title).join('; ')})),'Delydelser',W([10,26,34,50,30,30,50,40,40,60,30,60]));
     add(db.mains.map(m=>({'Procesområde-ID':m.area,'Procesområde':aN(m.area),'Hovedproces-ID':m.id,'Hovedproces':m.title})),'Struktur',W([14,26,14,34]));
     XLSX.writeFile(wb,'proceslandskab.xlsx');
   }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
@@ -1863,7 +2102,15 @@ function importXLSX(file){if(!canEdit())return showLogin();
       /* fjern hovedprocesser uden delprocesser (kan opstå fra Struktur-arket) */
       const usedMains=new Set(nd.subs.map(s=>s.main));
       nd.mains=nd.mains.filter(m=>usedMains.has(m.id)||!strukRows);
-      const usedAreas=new Set(nd.mains.map(m=>m.area));
+      /* delydelser: fra arket »Delydelser«, ellers beholdes de nuværende (ydelsen slås op på navn) */
+      const subIdSet=new Set(nd.subs.map(s=>s.id)),ydRows=sheet('Delydelser');
+      nd.delydelser=ydRows
+        ?ydRows.filter(x=>str(x['Delydelse'])).map(x=>({id:str(x['ID'])||newId('yd'),area:areaId(x['Ydelse']),name:str(x['Delydelse']),
+          beskrivelse:str(x['Beskrivelse']),kanaler:str(x['Kanaler']),maalgruppe:str(x['Ydelsens målgruppe']),
+          dok:lvlParse(x['Dokumentation af ydelse']),ens:lvlParse(x['Ensartet opgaveløsning vedr. ydelse']),
+          subs:splitNames(x["Delproces-ID'er"]).filter(id=>subIdSet.has(id))}))
+        :(db.delydelser||[]).map(d=>({...clone(d),area:areaId(area(d.area).name),subs:(d.subs||[]).filter(id=>subIdSet.has(id))}));
+      const usedAreas=new Set([...nd.mains.map(m=>m.area),...nd.delydelser.map(d=>d.area)]);
       nd.areas=nd.areas.filter(a=>usedAreas.has(a.id));
       nd.log=Array.isArray(db.log)?db.log:[];
       /* ledelses-id'er (uc/sl) følger med enheder, der beholder deres id */
@@ -1872,7 +2119,7 @@ function importXLSX(file){if(!canEdit())return showLogin();
       if(!nd.aludd.length&&(db.aludd||[]).length)nd.aludd=db.aludd;
       nd.ledelse=db.ledelse;
       db=nd;normalizeDb();
-      const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder';
+      const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder, '+db.delydelser.length+' delydelser';
       logChange('Importerede hele landskabet fra Excel: '+sum);
       resetUi();saveDb();render();
       alert('Importeret: '+sum+'.');
@@ -2003,7 +2250,7 @@ async function logout(){
    STEL
    ============================================================ */
 let currentView='landskab';
-const VIEWS={landskab:renderLandskab,matrix:renderMatrix,liste:renderListe,enhed:renderEnhed};
+const VIEWS={landskab:renderLandskab,ydelse:renderYdelse,matrix:renderMatrix,liste:renderListe,enhed:renderEnhed};
 function render(){
   renderLedelse();
   if(enhedOpen){renderEnhedPage();return;}
@@ -2959,7 +3206,8 @@ async function migrateOld(){
     if(error)throw error;
     const old=(typeof data.data==='string')?JSON.parse(data.data):(data&&data.data);
     if(!old||!Array.isArray(old.subs))throw new Error('uventet format i den gamle række');
-    db=old;
+    const keepYd=db.delydelser||[];
+    db=old;db.delydelser=keepYd;
     (db.log||[]).forEach((e,i)=>{if(!e.id)e.id='lg'+Date.now().toString(36)+i;});
     normalizeDb();
     logChange('Migrerede landskabet fra den gamle database: '+db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser');
