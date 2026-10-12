@@ -709,7 +709,7 @@ function landRows(){
   return {
     areas:db.areas.map((a,i)=>({id:a.id,name:a.name,pos:i})),
     mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i,...(mainsExtOk?{beskrivelse:m.beskrivelse||null,kanaler:m.kanaler||null,maalgruppe:m.maalgruppe||null,dokumentation:m.dok||null,ensartet:m.ens||null}:{}),...(mainsForudOk?{forudsaetning:!!m.forud}:{})})),
-    subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i})),
+    subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i,...(subsExtOk?{kanaler:s.kanaler||null,maalgruppe:s.maalgruppe||null,dokumentation:s.dok||null,ensartet:s.ens||null}:{})})),
     registry:reg,
     landskab_settings:[{id:'ls',vd:(db.ledelse&&db.ledelse.vd)||null,uc:(db.ledelse&&db.ledelse.uc)||null}],
     landskab_log:(db.log||[]).map(e=>({id:e.id,t:e.t,who:e.who||null,msg:e.msg}))
@@ -718,7 +718,9 @@ function landRows(){
 let landSnap=null;
 /* ydelsesfelterne på hovedprocessen (beskrivelse, kanaler, målgruppe, dokumentation, ensartet) findes
    først i tabellen mains, når SQL-scriptet mains_ydelsesfelter.sql er kørt i Supabase */
-let mainsExtOk=false,mainsExtWarned=false,mainsForudOk=false;
+let mainsExtOk=false,mainsExtWarned=false,mainsForudOk=false,subsExtOk=false,subsExtWarned=false;
+/* kanaler, målgruppe, dokumentation og ensartethed defineres på delprocesniveau (tabellen subs) og opsummeres pr. hovedproces */
+const SUB_FIELDS=['kanaler','maalgruppe','dok','ens'];
 const MAIN_FIELDS=['beskrivelse','kanaler','maalgruppe','dok','ens'];
 const mainHasData=m=>MAIN_FIELDS.some(f=>m[f])||!!m.forud;
 /* skriv forskellen mellem current (tabel→rækker) og snap; scopeCol/scopeVal begrænser sletninger (enhedstabeller) */
@@ -758,7 +760,7 @@ async function loadDb(){
       const nd={
         areas:ar.map(x=>({id:x.id,name:x.name})),
         mains:mn.map(x=>({id:x.id,area:x.area||'',title:x.title,beskrivelse:x.beskrivelse||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||'',forud:x.forudsaetning===true})),
-        subs:su.map(x=>({id:x.id,main:x.main||'',title:x.title,kap:x.kap||'',delkap:x.delkap||'',lederteam:x.lederteam||'',arbfael:x.arbfael||'',roles:x.roles||{},status:x.status||'',note:x.note||''})),
+        subs:su.map(x=>({id:x.id,main:x.main||'',title:x.title,kap:x.kap||'',delkap:x.delkap||'',lederteam:x.lederteam||'',arbfael:x.arbfael||'',roles:x.roles||{},status:x.status||'',note:x.note||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||''})),
         log:lg.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}))
       };
       REG_KEYS.forEach(r=>nd[r]=[]);
@@ -767,6 +769,8 @@ async function loadDb(){
       nd.ledelse={vd:(lsr&&lsr.vd)||'',uc:(lsr&&lsr.uc)||''};
       {const t=await sb.from('mains').select('beskrivelse,kanaler,maalgruppe,dokumentation,ensartet').limit(1);
         mainsExtOk=!t.error;if(t.error)console.warn('Hovedprocessernes ydelsesfelter mangler i tabellen mains — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
+      {const t=await sb.from('subs').select('kanaler,maalgruppe,dokumentation,ensartet').limit(1);
+        subsExtOk=!t.error;if(t.error)console.warn('Delprocessernes ydelsesfelter mangler i tabellen subs — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
       {const t=await sb.from('mains').select('forudsaetning').limit(1);
         mainsForudOk=!t.error;if(t.error)console.warn('Feltet forudsaetning mangler i tabellen mains — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
       db=nd;loaded=true;
@@ -775,7 +779,11 @@ async function loadDb(){
   }
   if(!loaded){const v=lsGet(STORE_KEY);if(v){db=v;setSaveStatus('error');}}
   normalizeDb();
-  if(loaded){lsSet(STORE_KEY,db);landSnap=keyAll(landRows());}
+  if(loaded)landSnap=keyAll(landRows());
+  /* flyt gamle hovedprocesværdier ned på delprocesserne — gemmes ved næste gem, når felterne findes i subs */
+  const moved=(!loaded||subsExtOk)&&moveMainFieldsToSubs(db);
+  if(loaded)lsSet(STORE_KEY,db);
+  if(loaded&&moved&&canEdit())saveDb();
 }
 let saveSeq=0;
 async function saveDb(){
@@ -786,6 +794,8 @@ async function saveDb(){
   if(!sb){if(my===saveSeq)setSaveStatus('error');return;}
   if((!mainsExtOk&&db.mains.some(m=>MAIN_FIELDS.some(f=>m[f]))||!mainsForudOk&&db.mains.some(m=>m.forud))&&!mainsExtWarned){mainsExtWarned=true;
     alert('Hovedprocessernes ydelsesfelter (forudsætningsydelse, beskrivelse, kanaler, målgruppe, dokumentation, ensartet opgaveløsning) kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »mains«.\n\nKør SQL-scriptet mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
+  if(!subsExtOk&&db.subs.some(x=>SUB_FIELDS.some(f=>x[f]))&&!subsExtWarned){subsExtWarned=true;
+    alert('Delprocessernes kanaler, målgruppe, dokumentation og ensartethed kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »subs«.\n\nKør SQL-scriptet mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
   try{
     landSnap=await syncTables(landRows(),landSnap);
     if(my===saveSeq)setSaveStatus('saved');
@@ -843,7 +853,7 @@ function normalizeDb(){
   db.subs.forEach(s=>{
     if(!s.roles||typeof s.roles!=='object')s.roles={};
     ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});
-    ['kap','delkap','lederteam','arbfael'].forEach(f=>{if(typeof s[f]!=='string')s[f]='';});
+    ['kap','delkap','lederteam','arbfael',...SUB_FIELDS].forEach(f=>{if(typeof s[f]!=='string')s[f]=s[f]==null?'':String(s[f]);});
   });
   migrateRefs();
   [...db.delkapabiliteter,...db.workgroups].forEach(x=>{if(typeof x.parent!=='string')x.parent='';});
@@ -1115,6 +1125,8 @@ function renderDrawerView(){
       <div class="field row2">${field('Kapabilitet',vOr(kapName(s)))}${field('Delkapabilitet',vOr(delkapName(s)))}</div>
       <div class="field row2">${field('Procesområde',esc(area(oid).name),` style="color:${areaColor(oid)}"`)}${field('Hovedproces',esc(m.title))}</div>
       <div class="field row2">${field('Lederteam',vOr(ltName(s)))}${field('Arbejdsfællesskab',vOr(afName(s)))}</div>
+      <div class="field row2">${field('Kanaler',s.kanaler?esc(s.kanaler):NOT_SET)}${field('Målgruppe',s.maalgruppe?esc(s.maalgruppe):NOT_SET)}</div>
+      <div class="field row2">${field('Dokumentation',lvlTag(DOK_VALUES,s.dok)||NOT_SET,lvlOf(DOK_VALUES,s.dok)?` title="${esc(lvlOf(DOK_VALUES,s.dok).l)}"`:'')}${field('Ensartethed i opgaveløsning',lvlTag(ENS_VALUES,s.ens)||NOT_SET,lvlOf(ENS_VALUES,s.ens)?` title="${esc(lvlOf(ENS_VALUES,s.ens).l)}"`:'')}</div>
       <div class="field"><div class="k">Ansvar og involvering (RACI)</div><div class="raci-grid">${ROLE_KEYS.map(racLine).join('')}</div></div>
       ${(s.status||s.note)?`<div class="field"><div class="k">Ændring ift. tidligere proceslandskab</div><div class="v">${s.status?statusTag(s.status)+' ':''}${s.note?esc(s.note):''}</div></div>`:''}
     </div>`;
@@ -1123,7 +1135,7 @@ function startEdit(){if(!canEdit())return showLogin();editBuf=clone(db.subs.find
 function normalizeSub(s){if(!s.roles)s.roles={};ROLE_KEYS.forEach(k=>{if(!Array.isArray(s.roles[k]))s.roles[k]=[];});}
 function newSub(mid){if(!canEdit())return showLogin();
   const id='d'+Date.now();
-  editBuf={id,main:mid||(db.mains[0]&&db.mains[0].id)||'',title:'',kap:'',delkap:'',lederteam:'',arbfael:'',roles:{},status:'',note:''};
+  editBuf={id,main:mid||(db.mains[0]&&db.mains[0].id)||'',title:'',kap:'',delkap:'',lederteam:'',arbfael:'',roles:{},status:'',note:'',kanaler:'',maalgruppe:'',dok:'',ens:''};
   normalizeSub(editBuf);drawerId=id;mainDrawer=null;mainEditBuf=null;renderDrawerEdit();openScrim();
 }
 function renderDrawerEdit(){
@@ -1144,6 +1156,8 @@ function renderDrawerEdit(){
       <div class="two">${lab('Kapabilitet',regSelect('kapabiliteter','kap',s.kap))}${lab('Delkapabilitet',childSelect('delkapabiliteter','delkap',s))}</div>
       <div class="two">${lab('Procesområde',`<select onchange="setEditArea(this.value)">${db.areas.map(a=>opt(a.id,a.name,aid)).join('')}</select>`)}${lab('Hovedproces','<div id="main-select"></div>')}</div>
       <div class="two">${lab('Lederteam',regSelect('leaderteams','lederteam',s.lederteam))}${lab('Arbejdsfællesskab',childSelect('workgroups','arbfael',s))}</div>
+      <div class="two">${lab('Kanaler',`<textarea rows="2" placeholder="Fx mail, telefon, KUnet …" oninput="editBuf.kanaler=this.value">${esc(s.kanaler||'')}</textarea>`)}${lab('Målgruppe',`<textarea rows="2" placeholder="Fx studerende, undervisere, institutter …" oninput="editBuf.maalgruppe=this.value">${esc(s.maalgruppe||'')}</textarea>`)}</div>
+      <div class="two">${lab('Dokumentation',`<select onchange="editBuf.dok=this.value"><option value="">Ikke angivet</option>${DOK_VALUES.map(x=>opt(x.v,x.l,s.dok||'')).join('')}</select>`)}${lab('Ensartethed i opgaveløsning',`<select onchange="editBuf.ens=this.value"><option value="">Ikke angivet</option>${ENS_VALUES.map(x=>opt(x.v,x.l,s.ens||'')).join('')}</select>`)}</div>
       <label>Ansvar og involvering (RACI)</label><div id="roles-edit"></div>
       <div class="two">${lab('Ændringsstatus',`<select onchange="editBuf.status=this.value"><option value="">Ikke angivet</option>${STATUS_VALUES.map(v=>opt(v,v,s.status||'')).join('')}</select>`)}</div>
       <label>Ændringsbeskrivelse</label><textarea rows="4" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)" oninput="editBuf.note=this.value">${esc(s.note||'')}</textarea>
@@ -1236,6 +1250,7 @@ function saveSub(){
   }
   delete editBuf._area;
   editBuf.note=String(editBuf.note||'').trim();if(!STATUS_VALUES.includes(editBuf.status))editBuf.status='';
+  ['kanaler','maalgruppe'].forEach(f=>editBuf[f]=String(editBuf[f]||'').trim());
   const idx=db.subs.findIndex(x=>x.id===editBuf.id);
   if(idx>=0){
     const ch=subDiff(db.subs[idx],editBuf);
@@ -1251,6 +1266,9 @@ function subDiff(a,b){
   if(a.main!==b.main)ch.push('hovedproces → '+qt(mainById(b.main).title));
   if((a.status||'')!==(b.status||''))ch.push('ændringsstatus → '+(b.status?qt(b.status):'(tom)'));
   if((a.note||'')!==(b.note||''))ch.push('ændringsbeskrivelse '+(b.note?'opdateret':'slettet'));
+  [['kanaler','kanaler'],['maalgruppe','målgruppe']].forEach(([f,l])=>{if((a[f]||'')!==(b[f]||''))ch.push(l+' '+(b[f]?'opdateret':'slettet'));});
+  if((a.dok||'')!==(b.dok||''))ch.push('dokumentation → '+(b.dok||'(tom)'));
+  if((a.ens||'')!==(b.ens||''))ch.push('ensartethed → '+(b.ens||'(tom)'));
   [['kap','kapabiliteter'],['delkap','delkapabiliteter'],['lederteam','leaderteams'],['arbfael','workgroups']].forEach(([f,reg])=>{if((a[f]||'')!==(b[f]||''))ch.push(REGS[reg].one+' → '+(b[f]?qt(rawRegName(reg,b[f])):'(tom)'));});
   ROLE_DEFS.forEach(d=>{
     const x=roleIds(a,d.k),y=roleIds(b,d.k);
@@ -1314,12 +1332,40 @@ const mainInfoBtn=id=>`<button class="infobtn" onclick="event.stopPropagation();
 /* undertekst på hovedproces-kortet i Emne: i-knap, pile, antal delprocesser og vurderinger */
 const FORUD_TAG='<span class="lvl fu" title="Forudsætningsydelse">Forudsætningsydelse</span>';
 const mainRight=(m,mmv)=>`${mmv||''}${mainInfoBtn(m.id)}`;
-const mainMeta=(m,n)=>`${plural(n,'delproces','delprocesser')}${lvlTag(DOK_VALUES,m.dok)}${lvlTag(ENS_VALUES,m.ens)}`;
+const mainMeta=(m,n)=>`${plural(n,'delproces','delprocesser')}${lvlTag(DOK_VALUES,mainLevel(m,'dok'))}${lvlTag(ENS_VALUES,mainLevel(m,'ens'))}`;
 /* samlet RACI for hovedprocessens delprocesser: rolle → [{id, n = antal delprocesser}] */
 function mainAgg(mid,keys){
   const subs=subsOfMain(mid),out={};
   keys.forEach(k=>{const cnt=new Map();subs.forEach(s=>roleIds(s,k).forEach(id=>cnt.set(id,(cnt.get(id)||0)+1)));out[k]=[...cnt].map(([id,n])=>({id,n}));});
   return out;
+}
+/* opsummering af delprocessernes felter. Har ingen delproces værdien, bruges en evt. gammel værdi på hovedprocessen */
+const splitTerms=t=>String(t||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+function mainTerms(m,f){
+  const seen=new Set(),out=[];
+  const add=t=>splitTerms(t).forEach(x=>{const k=x.toLowerCase();if(!seen.has(k)){seen.add(k);out.push(x);}});
+  subsOfMain(m.id).forEach(s=>add(s[f]));
+  if(!out.length)add(m[f]);
+  return out.join(', ');
+}
+/* niveau: den svageste delproces bestemmer (Dokumentation: laveste tal; Ensartethed: højeste tal) */
+function mainLevelInfo(m,f){
+  const subs=subsOfMain(m.id),vals=subs.map(s=>s[f]).filter(v=>/^[123]$/.test(v));
+  const cnt={};vals.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+  let v='';
+  if(vals.length)v=f==='dok'?String(Math.min(...vals.map(Number))):String(Math.max(...vals.map(Number)));
+  else if(/^[123]$/.test(m[f]||''))v=m[f];
+  return {v,cnt,n:vals.length,total:subs.length};
+}
+const mainLevel=(m,f)=>mainLevelInfo(m,f).v;
+/* flyt gamle værdier fra hovedprocessen ned på delprocesserne (kun hvis ingen delproces har feltet) */
+function moveMainFieldsToSubs(d){
+  let changed=false;
+  (d.mains||[]).forEach(m=>{const subs=(d.subs||[]).filter(x=>x.main===m.id);if(!subs.length)return;
+    SUB_FIELDS.forEach(f=>{if(!m[f])return;
+      if(!subs.some(x=>x[f]))subs.forEach(x=>{x[f]=m[f];});
+      m[f]='';changed=true;});});
+  return changed;
 }
 let mainDrawer=null,mainEditBuf=null;
 const mainObj=id=>db.mains.find(m=>m.id===id);
@@ -1332,7 +1378,9 @@ function renderMainView(){
       <div class="rl-people">${list.length?list.map(x=>`<span class="pill" title="${esc(refName(k,x.id))} — på ${x.n} af ${subs.length} delprocesser"><span class="avatar" style="width:18px;height:18px;font-size:9px">${initials(refName(k,x.id))}</span>${esc(refName(k,x.id))}${subs.length>1?`<span class="ydsum">${x.n}/${subs.length}</span>`:''}</span>`).join(''):'<span class="rl-none">Ikke udfyldt</span>'}</div></div>`;};
   const calc=keys=>subs.length?`<div class="raci-grid">${keys.map(aggLine).join('')}</div>`:'<span class="v empty">Samles automatisk, når hovedprocessen har delprocesser.</span>';
   const txt=(k,v)=>`<div class="field"><div class="k">${k}</div><div class="v pre">${v?esc(v):NOT_SET}</div></div>`;
-  const lvl=(k,list,v)=>{const x=lvlOf(list,v);return `<div class="field"><div class="k">${k}</div><div class="v">${x?`${lvlTag(list,v)}<div style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(x.l)}</div>`:NOT_SET}</div></div>`;};
+  const lvlSum=(k,list,f)=>{const inf=mainLevelInfo(m,f),x=lvlOf(list,inf.v);
+    const dist=inf.n?`<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${list.filter(y=>inf.cnt[y.v]).map(y=>`<div style="font-size:12.5px;color:var(--muted)">${lvlTag(list,y.v)} <span class="ydsum">${inf.cnt[y.v]} af ${inf.total} delprocesser</span></div>`).join('')}${inf.total>inf.n?`<div style="font-size:12.5px;color:var(--faint)">Ikke angivet: ${inf.total-inf.n} af ${inf.total} delprocesser</div>`:''}</div>`:'';
+    return `<div class="field"><div class="k">${k}</div><div class="v">${x?`${lvlTag(list,inf.v)}<div style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(x.l)}</div>${dist}`:NOT_SET}</div></div>`;};
   $('drawer').innerHTML=`
     <div class="dr-head">
       <button class="dr-close" onclick="closeDrawer()" aria-label="Luk">×</button>
@@ -1346,10 +1394,10 @@ function renderMainView(){
     </div>
     <div class="dr-body">
       <div class="field"><div class="k">Forudsætning</div><div class="v">${m.forud?'<span class="lvl fu">Ja</span>':'Nej'}</div></div>
-      ${txt('Beskrivelse',m.beskrivelse)}${txt('Kanaler',m.kanaler)}${txt('Målgruppe',m.maalgruppe)}
+      ${txt('Beskrivelse',m.beskrivelse)}${txt('Kanaler',mainTerms(m,'kanaler'))}${txt('Målgruppe',mainTerms(m,'maalgruppe'))}
       <div class="field"><div class="k">Rolle/Ansvar</div>${calc(YD_ROLE_KEYS)}</div>
       <div class="field"><div class="k">Procesejerskab</div>${calc(YD_OWNER_KEYS)}</div>
-      ${lvl('Dokumentation',DOK_VALUES,m.dok)}${lvl('Ensartethed i opgaveløsning',ENS_VALUES,m.ens)}
+      ${lvlSum('Dokumentation',DOK_VALUES,'dok')}${lvlSum('Ensartethed i opgaveløsning',ENS_VALUES,'ens')}
       <div class="field"><div class="k">Delprocesser (${subs.length})</div>${subs.length?`<div class="ydsubs">${subs.map(s=>`<div class="ydsub" onclick="openDrawer('${jsq(s.id)}')" title="Åbn delprocessen"><span>${esc(s.title)}</span>${ltName(s)?`<small>${esc(ltName(s))}</small>`:''}</div>`).join('')}</div>`:NOT_SET}</div>
     </div>`;
 }
@@ -1380,21 +1428,15 @@ function renderMainEdit(){
       <label>Procesområde</label><select onchange="mainEditBuf.area=this.value">${db.areas.map(a=>opt(a.id,a.name,m.area)).join('')}</select>
       <label class="chk"><input type="checkbox" ${m.forud?'checked':''} onchange="mainEditBuf.forud=this.checked">Forudsætning</label>
       <label>Beskrivelse</label>${ta('beskrivelse','')}
-      <label>Kanaler</label>${ta('kanaler','Fx mail, telefon, fremmøde, KUnet …')}
-      <label>Målgruppe</label>${ta('maalgruppe','Fx studerende, undervisere, institutter …')}
-      <label>Dokumentation</label>${sel('dok',DOK_VALUES)}
-      <label>Ensartethed i opgaveløsning</label>${sel('ens',ENS_VALUES)}
-      <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Rolle/Ansvar og Procesejerskab udfyldes ikke her — de samles automatisk fra RACI på hovedprocessens delprocesser.</div>
+      <div style="font-size:11.5px;color:var(--faint);margin-top:12px">Kanaler, Målgruppe, Rolle/Ansvar, Procesejerskab, Dokumentation og Ensartethed i opgaveløsning udfyldes på delprocesserne og opsummeres automatisk her.</div>
     </div>`;
 }
 function mainDiff(a,b){
   const ch=[];
   if(a.title!==b.title)ch.push('navn '+qt(a.title)+' → '+qt(b.title));
   if(a.area!==b.area)ch.push('procesområde → '+qt(area(b.area).name));
-  [['beskrivelse','beskrivelse'],['kanaler','kanaler'],['maalgruppe','målgruppe']].forEach(([f,l])=>{if((a[f]||'')!==(b[f]||''))ch.push(l+' '+(b[f]?'opdateret':'slettet'));});
+  if((a.beskrivelse||'')!==(b.beskrivelse||''))ch.push('beskrivelse '+(b.beskrivelse?'opdateret':'slettet'));
   if(!!a.forud!==!!b.forud)ch.push(b.forud?'markeret som forudsætningsydelse':'ikke længere forudsætningsydelse');
-  if((a.dok||'')!==(b.dok||''))ch.push('dokumentation → '+(b.dok||'(tom)'));
-  if((a.ens||'')!==(b.ens||''))ch.push('ensartet opgaveløsning → '+(b.ens||'(tom)'));
   return ch;
 }
 function saveMain(){
@@ -1403,7 +1445,7 @@ function saveMain(){
   m.title=String(m.title||'').trim();
   if(!m.title){alert('Giv hovedprocessen et navn.');return;}
   if(!m.area){alert('Vælg et procesområde.');return;}
-  ['beskrivelse','kanaler','maalgruppe'].forEach(f=>m[f]=String(m[f]||'').trim());m.forud=!!m.forud;
+  m.beskrivelse=String(m.beskrivelse||'').trim();m.forud=!!m.forud;
   const i=db.mains.findIndex(x=>x.id===m.id);
   if(i>=0){
     const old=db.mains[i],ch=mainDiff(old,m);
@@ -1954,6 +1996,8 @@ function exportXLSX(){
     /* rawAnyName: for procesejer/driftsejer eksporteres funktionen — aldrig navnet */
     ROLE_DEFS.forEach(d=>{row[d.col]=roleIds(s,d.k).map(rawAnyName).join('; ');});
     row['Ændringsstatus']=s.status||'';row['Ændringsbeskrivelse']=s.note||'';
+    row['Kanaler']=s.kanaler||'';row['Målgruppe']=s.maalgruppe||'';
+    row['Dokumentation']=(lvlOf(DOK_VALUES,s.dok)||{}).l||'';row['Ensartethed i opgaveløsning']=(lvlOf(ENS_VALUES,s.ens)||{}).l||'';
     return row;
   });
   const regSheet=reg=>db[reg].map(x=>OWNER_REGS.includes(reg)?{'ID':x.id,'Funktion':x.name}
@@ -1961,15 +2005,15 @@ function exportXLSX(){
   try{
     const wb=XLSX.utils.book_new();
     const add=(rows,name,wch)=>{const ws=XLSX.utils.json_to_sheet(rows);if(wch)ws['!cols']=wch;XLSX.utils.book_append_sheet(wb,ws,name);};
-    add(del,'Delprocesser',W([9,24,14,30,40,24,24,26,26,26,26,28,28,28,26,26,14,80]));
+    add(del,'Delprocesser',W([9,24,14,30,40,24,24,26,26,26,26,28,28,28,26,26,14,80,30,30,30,40]));
     REG_KEYS.forEach(r=>add(regSheet(r),REGS[r].sheet,W(REGS[r].parent?[9,34,30]:[9,34])));
     add(db.areas.map((a,i)=>({'Nr':i+1,'ID':a.id,'Navn':a.name})),'Procesområder',W([6,9,30]));
     /* Rolle/ansvar og Procesejerskab er beregnede (funktioner — aldrig navne) og ignoreres ved import */
     const aggTxt=(m,keys)=>{const g=mainAgg(m.id,keys);return keys.filter(k=>g[k].length).map(k=>roleDef(k).col+': '+g[k].map(x=>rawAnyName(x.id)).join(', ')).join(' | ');};
     add(db.mains.map(m=>({'Procesområde-ID':m.area,'Procesområde':aN(m.area),'Hovedproces-ID':m.id,'Hovedproces':m.title,
-      'Forudsætningsydelse':m.forud?'Ja':'Nej','Beskrivelse':m.beskrivelse||'','Kanaler':m.kanaler||'','Ydelsens målgruppe':m.maalgruppe||'',
+      'Forudsætningsydelse':m.forud?'Ja':'Nej','Beskrivelse':m.beskrivelse||'','Kanaler':mainTerms(m,'kanaler'),'Ydelsens målgruppe':mainTerms(m,'maalgruppe'),
       'Rolle/ansvar (beregnet)':aggTxt(m,YD_ROLE_KEYS),'Procesejerskab (beregnet)':aggTxt(m,YD_OWNER_KEYS),
-      'Dokumentation af ydelse':(lvlOf(DOK_VALUES,m.dok)||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,m.ens)||{}).l||''})),'Struktur',W([14,26,14,34,16,60,30,30,50,40,40,60]));
+      'Dokumentation af ydelse':(lvlOf(DOK_VALUES,mainLevel(m,'dok'))||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,mainLevel(m,'ens'))||{}).l||''})),'Struktur',W([14,26,14,34,16,60,30,30,50,40,40,60]));
     XLSX.writeFile(wb,'proceslandskab.xlsx');
   }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
 }
@@ -2034,8 +2078,8 @@ async function downloadYdelseskatalog(){
     /* data: én række pr. hovedproces, i procesområdernes og hovedprocessernes rækkefølge */
     let n=0;
     db.areas.forEach(a=>db.mains.filter(m=>m.area===a.id).forEach(m=>{
-      const row=ws.addRow([katClean(a.name),katClean(m.title),m.beskrivelse||'',m.kanaler||'',m.maalgruppe||'',katRoles(m),katOwners(m),
-        (lvlOf(DOK_VALUES,m.dok)||{}).l||'',(lvlOf(ENS_VALUES,m.ens)||{}).l||'']);
+      const row=ws.addRow([katClean(a.name),katClean(m.title),m.beskrivelse||'',mainTerms(m,'kanaler'),mainTerms(m,'maalgruppe'),katRoles(m),katOwners(m),
+        (lvlOf(DOK_VALUES,mainLevel(m,'dok'))||{}).l||'',(lvlOf(ENS_VALUES,mainLevel(m,'ens'))||{}).l||'']);
       row.eachCell({includeEmpty:true},c=>{c.fill=fill(m.forud?KAT_COLORS.forud:KAT_COLORS.body);c.border=border;c.font=font;c.alignment={vertical:'top',horizontal:'left',wrapText:true};});
       n++;
     }));
@@ -2121,7 +2165,8 @@ function importXLSX(file){if(!canEdit())return showLogin();
         return {id:str(x['ID'])||newId('d'),main:mid,title:str(x['Delproces']),
           kap:kapId,delkap:childId.delkapabiliteter(x['Delkapabilitet'],kapId),
           lederteam:ltIdVal,arbfael:childId.workgroups(x['Arbejdsfællesskab']||x['Arbejdsfaellesskab'],ltIdVal),
-          roles,status:STATUS_VALUES.includes(st)?st:'',note:str(x['Ændringsbeskrivelse'])};
+          roles,status:STATUS_VALUES.includes(st)?st:'',note:str(x['Ændringsbeskrivelse']),
+          kanaler:str(x['Kanaler']),maalgruppe:str(x['Målgruppe']),dok:lvlParse(x['Dokumentation']),ens:lvlParse(x['Ensartethed i opgaveløsning'])};
       });
       if(!nd.subs.length)throw new Error('ingen delprocesser fundet');
       /* hovedprocesser fra Struktur-arket beholdes, også selvom de (endnu) ikke har delprocesser */
@@ -2141,7 +2186,7 @@ function importXLSX(file){if(!canEdit())return showLogin();
       /* ældre Excel-filer uden arket AL UDD: behold registret som det er */
       if(!nd.aludd.length&&(db.aludd||[]).length)nd.aludd=db.aludd;
       nd.ledelse=db.ledelse;
-      db=nd;normalizeDb();
+      db=nd;normalizeDb();moveMainFieldsToSubs(db);
       const sum=db.subs.length+' delprocesser, '+db.mains.length+' hovedprocesser, '+allUnitList().length+' enheder';
       logChange('Importerede hele landskabet fra Excel: '+sum);
       resetUi();saveDb();render();
