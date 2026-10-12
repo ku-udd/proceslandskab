@@ -313,6 +313,8 @@
   .mmove button{border:0;background:none;cursor:pointer;color:var(--faint);padding:0;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px}
   .mmove button:hover{color:var(--ink);background:var(--surface)}
   .mmove button:disabled{opacity:.22;cursor:default;background:none}
+  .mhead .mright{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .mhead .mright .infobtn,.mhead .mright .mmove{margin:0;vertical-align:0}
   .mhead .lvl{margin-left:6px;font-size:10.5px;padding:0 7px}
   .addmain{margin-top:8px;border:1px dashed var(--line-strong);border-radius:11px;background:var(--surface)}
   .pill.sublink{cursor:pointer}
@@ -934,8 +936,8 @@ const branch=(open,onclick,color,title,meta,inner,attr='')=>`<section class="are
     <div><div class="atitle">${esc(title)}</div><div class="ameta">${meta}</div></div>${chev(18)}</div>
   <div class="awrap">${inner}</div></section>`;
 /* et hovedproces-kort med rækker */
-const mainCard=(open,onclick,title,meta,head,rows,attr='',cls='')=>`<div class="maincard ${open?'open':''}${cls}"${attr}>
-  <div class="mhead" onclick="${onclick}">${chev(16)}<div class="mtitlewrap"><div class="mtitle">${esc(title)}</div><div class="mmeta">${meta}</div></div></div>
+const mainCard=(open,onclick,title,meta,head,rows,attr='',cls='',right='')=>`<div class="maincard ${open?'open':''}${cls}"${attr}>
+  <div class="mhead" onclick="${onclick}">${chev(16)}<div class="mtitlewrap"><div class="mtitle">${esc(title)}</div><div class="mmeta">${meta}</div></div>${right?`<div class="mright">${right}</div>`:''}</div>
   <div class="mwrap">${head}${rows}</div></div>`;
 /* én delproces-række; mv = indholdet af pile-kolonnen, uid = enhed (viser RACI-tags), showMain = hovedproces under titlen */
 function subRow(s,uid,showMain,mv){
@@ -975,7 +977,7 @@ function renderLandskab(){
       }).join('')+(canEdit()?`<button class="addsub" onclick="newSub('${m.id}')">+ Tilføj delproces</button>`:'');
       const sibM=mainsOfArea(a.id),mp=sibM.indexOf(m);
       const mmv=canEdit()&&!flt?`<span class="mmove"><button ${mp===0?'disabled':''} title="Flyt hovedprocessen op" onclick="event.stopPropagation();moveMain('${jsq(m.id)}',-1)">${arrow(12,2.5,1)}</button><button ${mp===sibM.length-1?'disabled':''} title="Flyt hovedprocessen ned" onclick="event.stopPropagation();moveMain('${jsq(m.id)}',1)">${arrow(12,2.5,0)}</button></span>`:'';
-      return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,mainMeta(m,ms.length,mmv),ms.length?colHead('Delproces'):'',rows,` data-main="${m.id}"`);
+      return mainCard(ui.openMains.has(m.id),`toggleMain('${m.id}')`,m.title,mainMeta(m,ms.length),ms.length?colHead('Delproces'):'',rows,` data-main="${m.id}"`,'',mainRight(m,mmv));
     }).join('')+(canEdit()&&!flt?`<button class="addsub addmain" onclick="newMain('${jsq(a.id)}')">+ Tilføj hovedproces</button>`:'');
     h+=branch(ui.openAreas.has(a.id),`toggleArea('${a.id}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${aSubs.length} delprocesser${aPE||aLT?`<span style="display:block;margin-top:1px">${aPE?`Procesejer: <b style="color:var(--ink);font-weight:600">${aPE}</b>`:''}${aPE&&aLT?' · ':''}${aLT?`Lederteam: <b style="color:var(--ink);font-weight:600">${aLT}</b>`:''}</span>`:''}`,inner,` data-area="${a.id}"`);
   });
@@ -1020,7 +1022,7 @@ function mainsBlock(subs,keyBase,uid,force){
   const ordered=[...db.mains.filter(m=>ids.includes(m.id)),...ids.filter(id=>!db.mains.some(m=>m.id===id)).map(mainById)];
   return ordered.map(m=>{
     const ms=subs.filter(s=>s.main===m.id),key=keyBase+'>'+m.id;
-    return mainCard(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,m.title,`${mainInfoBtn(m.id)}${esc(area(m.area).name)} · ${plural(ms.length,'delproces','delprocesser')}`,colHead('Delproces'),ms.map(s=>subRow(s,uid)).join(''));
+    return mainCard(force||ui.openKeys.has(key),`toggleKey('${jsq(key)}')`,m.title,`${esc(area(m.area).name)} · ${plural(ms.length,'delproces','delprocesser')}`,colHead('Delproces'),ms.map(s=>subRow(s,uid)).join(''),'','',mainRight(m));
   }).join('');
 }
 function renderMatrix(){
@@ -1311,7 +1313,8 @@ const IC_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const mainInfoBtn=id=>`<button class="infobtn" onclick="event.stopPropagation();openMain('${jsq(id)}')" title="Hovedprocessens oplysninger — beskrivelse, kanaler, målgruppe, rolle/ansvar m.m." aria-label="Vis hovedprocessens oplysninger">${IC_INFO}</button>`;
 /* undertekst på hovedproces-kortet i Emne: i-knap, pile, antal delprocesser og vurderinger */
 const FORUD_TAG='<span class="lvl fu" title="Forudsætningsydelse">Forudsætningsydelse</span>';
-const mainMeta=(m,n,mmv)=>`${mmv||''}${mainInfoBtn(m.id)}${plural(n,'delproces','delprocesser')}${lvlTag(DOK_VALUES,m.dok)}${lvlTag(ENS_VALUES,m.ens)}`;
+const mainRight=(m,mmv)=>`${mmv||''}${mainInfoBtn(m.id)}`;
+const mainMeta=(m,n)=>`${plural(n,'delproces','delprocesser')}${lvlTag(DOK_VALUES,m.dok)}${lvlTag(ENS_VALUES,m.ens)}`;
 /* samlet RACI for hovedprocessens delprocesser: rolle → [{id, n = antal delprocesser}] */
 function mainAgg(mid,keys){
   const subs=subsOfMain(mid),out={};
