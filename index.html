@@ -308,6 +308,8 @@
   .lvl.fu{background:#e4e4e4;color:#4a4a4a}
   .frm label.chk{display:flex;align-items:center;gap:9px;margin:18px 0 4px;font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:600;cursor:pointer}
   .chk input{width:17px;height:17px;margin:0;accent-color:var(--wine)}
+  .drseg{margin-top:12px;box-shadow:none}
+  .drseg button{padding:6px 13px;font-size:13px}
   .uinfo{display:flex;align-items:center;justify-content:flex-end}
   .uinfo .infobtn{margin:0}
   .unote{background:#fbe1dc;color:#7a2a1c;border:1px solid #f0c4ba;border-radius:10px;padding:10px 14px;font-size:13px;margin:0 0 14px}
@@ -1119,6 +1121,7 @@ function renderDrawerView(){
     <div class="dr-head">
       <button class="dr-close" onclick="closeDrawer()" aria-label="Luk">×</button>
       <h2>${esc(s.title)}</h2>
+      ${drSwitch(s.id,'land')}
       ${canEdit()?`<div class="dr-actions">
         <button class="btn primary" onclick="startEdit()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Rediger</button>
         <button class="btn danger" onclick="deleteSub()">Slet</button>
@@ -2742,7 +2745,6 @@ function uRenderPlanList(){
       ${ARROW_R}</div>`;
   const recsOf=list=>list.map(sd=>uRec(sd.id)).filter(Boolean);
   const aavOf=list=>recsOf(list).reduce((x,t)=>x+uTaskAAV(t),0);
-  const doneTxt=list=>{const n=recsOf(list).length;return `${n} af ${list.length} udfyldt`;};
   let h=dups.length?`<div class="unote">${plural(dups.length,'delproces','delprocesser')} har stadig flere gamle opgaver for enheden. Kør SQL-scriptet <b>enhed_delprocesniveau.sql</b> i Supabase, så de konverteres til delprocesser.</div>`:'';
   areasShown.forEach(a=>{
     const mns=mainsShown.filter(m=>m.area===a.id);
@@ -2751,9 +2753,9 @@ function uRenderPlanList(){
     const inner=mns.map(m=>{
       const ms=subsOfMain(m.id).filter(x=>subIds.has(x.id));
       const mAAV=aavOf(ms);
-      return mainCard(anyF||uState.openMains.has(m.id),`uToggleMain('${jsq(m.id)}')`,m.title,`${plural(ms.length,'delproces','delprocesser')} · ${doneTxt(ms)}${mAAV?' · '+fmtAAV(mAAV):''}`,colhead('Delproces'),ms.map(subRowU).join(''));
+      return mainCard(anyF||uState.openMains.has(m.id),`uToggleMain('${jsq(m.id)}')`,m.title,`${plural(ms.length,'delproces','delprocesser')}${mAAV?' · '+fmtAAV(mAAV):''}`,colhead('Delproces'),ms.map(subRowU).join(''));
     }).join('');
-    h+=branch(anyF||uState.openAreas.has(a.id),`uToggleArea('${jsq(a.id)}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${plural(aSubs.length,'delproces','delprocesser')} · ${doneTxt(aSubs)}${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
+    h+=branch(anyF||uState.openAreas.has(a.id),`uToggleArea('${jsq(a.id)}')`,areaColor(a.id),a.name,`${mns.length} hovedprocesser · ${plural(aSubs.length,'delproces','delprocesser')}${aAAV?' · '+fmtAAV(aAAV):''}`,inner);
   });
   /* "Andet": enhedens egne opgaver, der ikke kan placeres i landskabet — på samme niveau som delprocesserne */
   if(showAndet){
@@ -2930,6 +2932,16 @@ function uNewTask(sid){
   uRenderDrawerEdit();openScrim();
 }
 function uCloseDrawer(){setScrim(false);uDrawerTask=null;uDrawerSub=null;uEditBuf=null;}
+/* skift mellem enhedens felter og landskabets oplysninger på samme delproces (kun når en enheds side er åben) */
+function drSwitch(sid,active){
+  if(!enhedOpen)return '';
+  const sd=db.subs.find(x=>x.id===sid);if(!sd)return '';
+  if(!roleIds(sd,'RU').includes(enhedOpen)&&!uRec(sid))return '';
+  const IC_UNIT='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>';
+  return `<div class="seg drseg" role="tablist" aria-label="Vis oplysninger">
+    <button role="tab" aria-selected="${active==='unit'}" onclick="${active==='unit'?'':`uOpenSub('${jsq(sid)}')`}">${IC_UNIT}Enhedsinfo</button>
+    <button role="tab" aria-selected="${active==='land'}" onclick="${active==='land'?'':`openDrawer('${jsq(sid)}')`}">${IC_INFO.replace('<svg','<svg class="ic"')}Landskabsinfo</button></div>`;
+}
 const uNotSet='<span class="v empty">Ikke udfyldt endnu.</span>';
 /* den post, drawer'en viser: gemt post, eller en tom (virtuel) post for en ikke-udfyldt delproces */
 function uViewRec(){
@@ -2951,6 +2963,7 @@ function uRenderDrawerView(){
       <button class="dr-close" onclick="uCloseDrawer()" aria-label="Luk">×</button>
       <div class="crumb" style="color:${col}">${isAndet?'Andet · enhedens egen opgave':`Delproces · ${esc(m.title)}`}</div>
       <h2>${esc(uRecTitle(t))}</h2>
+      ${sdp?drSwitch(sdp.id,'unit'):''}
       <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
         ${virtual?'<span class="pill">Ikke udfyldt for enheden</span>':`<span class="pill">${statusDot(t.status)}${capFirst(t.status)}</span>
         <span class="pill">${(()=>{const st=weekStats(t.weeks);return st.active?st.active+' uger'+(st.peak?' · '+st.peak+' peak':''):'Ingen uger';})()}</span>
@@ -2959,7 +2972,6 @@ function uRenderDrawerView(){
       </div>
       <div class="dr-actions">
         ${uCanEdit()?`<button class="btn primary" onclick="uStartEdit()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>${virtual?'Udfyld for enheden':'Rediger'}</button>`:''}
-        ${sdp?`<button class="btn" onclick="openDrawer('${jsq(sdp.id)}')">${IC_INFO.replace('<svg','<svg class="ic"')}Landskabsinfo</button>`:''}
         ${uCanEdit()&&!virtual?`<button class="btn danger" onclick="uDeleteTask()">${isAndet?'Slet opgave':'Ryd enhedens felter'}</button>`:''}
       </div>
     </div>
