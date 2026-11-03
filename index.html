@@ -723,7 +723,7 @@ function landRows(){
   const reg=[];REG_KEYS.forEach(r=>{(db[r]||[]).forEach((x,i)=>reg.push({id:x.id,reg:r,name:x.name,parent:x.parent||null,pos:i,section_leader:x.sl||null,education_chief:x.uc||null}));});
   return {
     areas:db.areas.map((a,i)=>({id:a.id,name:a.name,pos:i})),
-    mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i,...(mainsExtOk?{beskrivelse:m.beskrivelse||null,kanaler:m.kanaler||null,maalgruppe:m.maalgruppe||null,dokumentation:m.dok||null,ensartet:m.ens||null}:{}),...(mainsForudOk?{forudsaetning:!!m.forud}:{}),...(mainsKatOk?{formaal:m.formaal||null,rolle_koncern:m.rolleKoncern||null,rolle_campus:m.rolleCampus||null,rolle_fak:m.rolleFak||null,samarbejdsmodel:m.samarbejde||null,ydelsestype:m.type||null,noter:m.noter||null}:{})})),
+    mains:db.mains.map((m,i)=>({id:m.id,area:m.area||null,title:m.title,pos:i,...(mainsExtOk?{beskrivelse:m.beskrivelse||null,kanaler:m.kanaler||null,maalgruppe:m.maalgruppe||null,dokumentation:m.dok||null,ensartet:m.ens||null}:{}),...(mainsForudOk?{forudsaetning:!!m.forud}:{}),...(mainsKatOk?{formaal:m.formaal||null,rolle_koncern:m.rolleKoncern||null,rolle_campus:m.rolleCampus||null,rolle_fak:m.rolleFak||null,ydelsestype:m.type||null,noter:m.noter||null}:{})})),
     subs:db.subs.map((s,i)=>({id:s.id,main:s.main||null,title:s.title,kap:s.kap||null,delkap:s.delkap||null,lederteam:s.lederteam||null,arbfael:s.arbfael||null,roles:s.roles||{},status:s.status||null,note:s.note||null,pos:i,...(subsExtOk?{kanaler:s.kanaler||null,maalgruppe:s.maalgruppe||null,dokumentation:s.dok||null,ensartet:s.ens||null}:{})})),
     registry:reg,
     landskab_settings:[{id:'ls',vd:(db.ledelse&&db.ledelse.vd)||null,uc:(db.ledelse&&db.ledelse.uc)||null}],
@@ -738,7 +738,7 @@ let mainsExtOk=false,mainsExtWarned=false,mainsForudOk=false,mainsKatOk=false,ma
 const SUB_FIELDS=['kanaler','maalgruppe','dok','ens'];
 const MAIN_FIELDS=['beskrivelse','kanaler','maalgruppe','dok','ens'];
 /* felterne fra ydelseskataloget (HR-skabelonen, okt./nov. 2026) — ligger på hovedprocessen (= delydelsen) */
-const KAT_FIELDS=['formaal','rolleKoncern','rolleCampus','rolleFak','samarbejde','type','noter'];
+const KAT_FIELDS=['formaal','rolleKoncern','rolleCampus','rolleFak','type','noter'];
 const mainHasData=m=>MAIN_FIELDS.some(f=>m[f])||KAT_FIELDS.some(f=>m[f])||!!m.forud;
 /* skriv forskellen mellem current (tabel→rækker) og snap; scopeCol/scopeVal begrænser sletninger (enhedstabeller) */
 async function syncTables(current,snap,scopeCol,scopeVal){
@@ -776,7 +776,7 @@ async function loadDb(){
       const [ar,mn,su,rg,lg]=res.map(r=>r.data||[]);
       const nd={
         areas:ar.map(x=>({id:x.id,name:x.name})),
-        mains:mn.map(x=>({id:x.id,area:x.area||'',title:x.title,beskrivelse:x.beskrivelse||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||'',forud:x.forudsaetning===true,formaal:x.formaal||'',rolleKoncern:x.rolle_koncern||'',rolleCampus:x.rolle_campus||'',rolleFak:x.rolle_fak||'',samarbejde:x.samarbejdsmodel||'',type:x.ydelsestype||'',noter:x.noter||''})),
+        mains:mn.map(x=>({id:x.id,area:x.area||'',title:x.title,beskrivelse:x.beskrivelse||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||'',forud:x.forudsaetning===true,formaal:x.formaal||'',rolleKoncern:x.rolle_koncern||'',rolleCampus:x.rolle_campus||'',rolleFak:x.rolle_fak||'',type:x.ydelsestype||'',noter:x.noter||''})),
         subs:su.map(x=>({id:x.id,main:x.main||'',title:x.title,kap:x.kap||'',delkap:x.delkap||'',lederteam:x.lederteam||'',arbfael:x.arbfael||'',roles:x.roles||{},status:x.status||'',note:x.note||'',kanaler:x.kanaler||'',maalgruppe:x.maalgruppe||'',dok:x.dokumentation||'',ens:x.ensartet||''})),
         log:lg.map(x=>({id:x.id,t:x.t,who:x.who||'',msg:x.msg}))
       };
@@ -790,8 +790,8 @@ async function loadDb(){
         subsExtOk=!t.error;if(t.error)console.warn('Delprocessernes ydelsesfelter mangler i tabellen subs — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
       {const t=await sb.from('mains').select('forudsaetning').limit(1);
         mainsForudOk=!t.error;if(t.error)console.warn('Feltet forudsaetning mangler i tabellen mains — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
-      {const t=await sb.from('mains').select('formaal,rolle_koncern,rolle_campus,rolle_fak,samarbejdsmodel,ydelsestype,noter').limit(1);
-        mainsKatOk=!t.error;if(t.error)console.warn('Ydelseskatalogets felter (formål, rolle/ansvar, samarbejdsmodel, type, noter) mangler i tabellen mains — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
+      {const t=await sb.from('mains').select('formaal,rolle_koncern,rolle_campus,rolle_fak,ydelsestype,noter').limit(1);
+        mainsKatOk=!t.error;if(t.error)console.warn('Ydelseskatalogets felter (formål, rolle/ansvar, type, noter) mangler i tabellen mains — kør mains_ydelsesfelter.sql i Supabase:',t.error.message);}
       db=nd;loaded=true;
     }catch(e){console.warn('Kunne ikke hente fra Supabase:',e);}
     await loadPlanIndex();
@@ -814,7 +814,7 @@ async function saveDb(){
   if((!mainsExtOk&&db.mains.some(m=>MAIN_FIELDS.some(f=>m[f]))||!mainsForudOk&&db.mains.some(m=>m.forud))&&!mainsExtWarned){mainsExtWarned=true;
     alert('Hovedprocessernes ydelsesfelter (forudsætningsydelse, beskrivelse, kanaler, målgruppe, dokumentation, ensartet opgaveløsning) kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »mains«.\n\nKør SQL-scriptet mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
   if(!mainsKatOk&&db.mains.some(m=>KAT_FIELDS.some(f=>m[f]&&!(f==='type'&&m[f]==='Forudsætningsydelse')))&&!mainsKatWarned){mainsKatWarned=true;
-    alert('Ydelseskatalogets nye felter (ydelsens formål, rolle/ansvar pr. niveau, samarbejdsmodel, type og noter) kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »mains«.\n\nKør det opdaterede SQL-script mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
+    alert('Ydelseskatalogets nye felter (ydelsens formål, rolle/ansvar pr. niveau, type og noter) kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »mains«.\n\nKør det opdaterede SQL-script mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
   if(!subsExtOk&&db.subs.some(x=>SUB_FIELDS.some(f=>x[f]))&&!subsExtWarned){subsExtWarned=true;
     alert('Delprocessernes kanaler, målgruppe, dokumentation og ensartethed kan ikke gemmes i databasen endnu, fordi felterne mangler i tabellen »subs«.\n\nKør SQL-scriptet mains_ydelsesfelter.sql i Supabase (SQL Editor) og genindlæs siden. Resten af landskabet gemmes som normalt.');}
   try{
@@ -871,7 +871,7 @@ function normalizeDb(){
   db.mains.forEach(m=>{[...MAIN_FIELDS,...KAT_FIELDS].forEach(f=>{if(typeof m[f]!=='string')m[f]=m[f]==null?'':String(m[f]);});
     /* type og forudsætning holdes i sync: ældre data har kun flaget forud */
     if(!typeOf(m.type))m.type=m.forud?FORUD_TYPE:'';
-    if(!SAM_VALUES.includes(m.samarbejde))m.samarbejde='';
+    delete m.samarbejde;   /* feltet Samarbejdsmodel er fjernet igen (nov. 2026) */
     m.forud=m.type===FORUD_TYPE;});
   if(!db.ledelse||typeof db.ledelse!=='object')db.ledelse={vd:'',uc:''};
   ['vd','uc'].forEach(k=>{if(typeof db.ledelse[k]!=='string')db.ledelse[k]='';});
@@ -1353,7 +1353,6 @@ const ENS_VALUES=[
   {v:'2',l:'2 – Ydelsen leveres pt. delvis standardiseret og ensartet på tværs af Campus administrationer',s:'Delvis standardiseret',c:'y'},
   {v:'3',l:'3 – Ydelsen leveres pt. ikke standardiseret på tværs af Campus administrationer',s:'Ikke standardiseret',c:'r'}];
 /* ydelseskatalogets lister (fanen »Lister« i HR-skabelonen) */
-const SAM_VALUES=['1. Partnerfunktion','2. Kontaktperson','3. Funktionspostkasse','4. Ad hoc'];
 const FORUD_TYPE='Forudsætningsydelse';
 const TYPE_VALUES=[
   {v:'Serviceydelse (intern)',c:'ti',fill:'FFE1E6E5'},
@@ -1440,7 +1439,6 @@ function renderMainView(){
       <div class="drsec">Ansvar og organisering</div>
       ${txt('Ydelsens målgruppe',mainTerms(m,'maalgruppe'))}
       ${ROLE_LEVELS.map(([lv,f,lab])=>`<div class="field"><div class="k">${lab}</div><div class="v pre">${m[f]?esc(m[f]):NOT_SET}</div>${lvlUnitsHtml(m,lv)}</div>`).join('')}
-      <div class="field"><div class="k">Samarbejdsmodel</div><div class="v">${m.samarbejde?esc(m.samarbejde):NOT_SET}</div></div>
       <div class="field"><div class="k">Procesejerskab</div>${calc(YD_OWNER_KEYS)}</div>
       <div class="drsec">Modenhed og standardisering</div>
       ${lvlSum('Dokumentation af ydelse',DOK_VALUES,'dok')}${lvlSum('Ensartet opgaveløsning på tværs af campusadministrationer',ENS_VALUES,'ens')}
@@ -1467,13 +1465,12 @@ function startMainEdit(){if(!canEdit())return showLogin();const m=mainObj(mainDr
 function newMain(aid){
   if(!canEdit())return showLogin();
   drawerId=null;editBuf=null;
-  mainEditBuf={id:'h'+Date.now().toString(36)+Math.floor(Math.random()*1e3),area:aid||firstArea()||'',title:'',beskrivelse:'',kanaler:'',maalgruppe:'',dok:'',ens:'',forud:false,formaal:'',rolleKoncern:'',rolleCampus:'',rolleFak:'',samarbejde:'',type:'',noter:''};
+  mainEditBuf={id:'h'+Date.now().toString(36)+Math.floor(Math.random()*1e3),area:aid||firstArea()||'',title:'',beskrivelse:'',kanaler:'',maalgruppe:'',dok:'',ens:'',forud:false,formaal:'',rolleKoncern:'',rolleCampus:'',rolleFak:'',type:'',noter:''};
   mainDrawer=mainEditBuf.id;renderMainEdit();openScrim();
 }
 function renderMainEdit(){
   const m=mainEditBuf,isNew=!mainObj(m.id);
   const ta=(f,ph)=>`<textarea rows="3" placeholder="${esc(ph)}" oninput="mainEditBuf.${f}=this.value">${esc(m[f]||'')}</textarea>`;
-  const sel=(f,list)=>`<select onchange="mainEditBuf.${f}=this.value"><option value="">Ikke angivet</option>${list.map(x=>opt(x.v,x.l,m[f]||'')).join('')}</select>`;
   $('drawer').innerHTML=`
     <div class="dr-head">
       <button class="dr-close" onclick="cancelMainEdit()" aria-label="Luk">×</button>
@@ -1494,7 +1491,6 @@ function renderMainEdit(){
       <div class="drsec">Ansvar og organisering</div>
       ${ROLE_LEVELS.map(([lv,f,lab])=>{const auto=mainObj(m.id)?katLevelText(m,lv):'';
         return `<label>${lab}</label><textarea rows="5" placeholder="Hvad gør dette niveau i ydelsen?" oninput="mainEditBuf.${f}=this.value">${esc(m[f]||'')}</textarea>${auto?`<div class="fhint">Fra delprocessernes RACI: ${esc(auto).replace(/\n/g,' · ')}. Står feltet tomt, bruges denne liste i ydelseskataloget.</div>`:''}`;}).join('')}
-      <label>Samarbejdsmodel</label><select onchange="mainEditBuf.samarbejde=this.value"><option value="">Ikke angivet</option>${SAM_VALUES.map(v=>opt(v,v,m.samarbejde||'')).join('')}</select>
       <div class="drsec">Typer og noter</div>
       <label>Type</label><select onchange="mainEditBuf.type=this.value"><option value="">Ikke angivet</option>${TYPE_VALUES.map(x=>opt(x.v,x.v,m.type||'')).join('')}</select>
       <label>Noter</label>${ta('noter','Interne noter, fx hvad der udestår')}
@@ -1507,7 +1503,6 @@ function mainDiff(a,b){
   if(a.area!==b.area)ch.push('procesområde → '+qt(area(b.area).name));
   if((a.beskrivelse||'')!==(b.beskrivelse||''))ch.push('beskrivelse '+(b.beskrivelse?'opdateret':'slettet'));
   if((a.type||'')!==(b.type||''))ch.push('type → '+(b.type?qt(b.type):'(tom)'));
-  if((a.samarbejde||'')!==(b.samarbejde||''))ch.push('samarbejdsmodel → '+(b.samarbejde?qt(b.samarbejde):'(tom)'));
   [['formaal','ydelsens formål'],['rolleKoncern','rolle/ansvar – koncernniveau'],['rolleCampus','rolle/ansvar – campus'],['rolleFak','rolle/ansvar – FAK/institut'],['noter','noter']]
     .forEach(([f,l])=>{if((a[f]||'')!==(b[f]||''))ch.push(l+' '+(b[f]?'opdateret':'slettet'));});
   return ch;
@@ -1520,7 +1515,7 @@ function saveMain(){
   if(!m.area){alert('Vælg et procesområde.');return;}
   m.beskrivelse=String(m.beskrivelse||'').trim();
   ['formaal','rolleKoncern','rolleCampus','rolleFak','noter'].forEach(f=>m[f]=String(m[f]||'').trim());
-  if(!typeOf(m.type))m.type='';if(!SAM_VALUES.includes(m.samarbejde))m.samarbejde='';
+  if(!typeOf(m.type))m.type='';
   m.forud=m.type===FORUD_TYPE;
   const i=db.mains.findIndex(x=>x.id===m.id);
   if(i>=0){
@@ -2088,9 +2083,9 @@ function exportXLSX(){
     const aggTxt=(m,keys)=>{const g=mainAgg(m.id,keys);return keys.filter(k=>g[k].length).map(k=>roleDef(k).col+': '+g[k].map(x=>rawAnyName(x.id)).join(', ')).join(' | ');};
     add(db.mains.map(m=>({'Procesområde-ID':m.area,'Procesområde':aN(m.area),'Hovedproces-ID':m.id,'Hovedproces':m.title,
       'Type':m.type||'','Forudsætningsydelse':m.forud?'Ja':'Nej','Ydelsens formål':m.formaal||'','Uddybende beskrivelse':m.beskrivelse||'','Kanaler':mainTerms(m,'kanaler'),'Ydelsens målgruppe':mainTerms(m,'maalgruppe'),
-      'Rolle/ansvar – koncernniveau':m.rolleKoncern||'','Rolle/ansvar – Campus':m.rolleCampus||'','Rolle/ansvar – FAK/institut':m.rolleFak||'','Samarbejdsmodel':m.samarbejde||'',
+      'Rolle/ansvar – koncernniveau':m.rolleKoncern||'','Rolle/ansvar – Campus':m.rolleCampus||'','Rolle/ansvar – FAK/institut':m.rolleFak||'',
       'Rolle/ansvar (beregnet)':aggTxt(m,YD_ROLE_KEYS),'Procesejerskab (beregnet)':aggTxt(m,YD_OWNER_KEYS),
-      'Dokumentation af ydelse':(lvlOf(DOK_VALUES,mainLevel(m,'dok'))||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,mainLevel(m,'ens'))||{}).l||'','Noter':m.noter||''})),'Struktur',W([14,26,14,34,22,16,50,60,30,30,50,50,50,20,50,40,40,60,50]));
+      'Dokumentation af ydelse':(lvlOf(DOK_VALUES,mainLevel(m,'dok'))||{}).l||'','Ensartet opgaveløsning vedr. ydelse':(lvlOf(ENS_VALUES,mainLevel(m,'ens'))||{}).l||'','Noter':m.noter||''})),'Struktur',W([14,26,14,34,22,16,50,60,30,30,50,50,50,50,40,40,60,50]));
     XLSX.writeFile(wb,'proceslandskab.xlsx');
   }catch(e){alert('Kunne ikke generere Excel-filen: '+e.message);}
 }
@@ -2104,6 +2099,7 @@ function exportXLSX(){
    navnene i landskabet er uden numre. Formateringen kræver ExcelJS, som hentes første gang der klikkes.
    Rolle/ansvar: teksten på hovedprocessen; er feltet tomt, bruges enhederne fra delprocessernes RACI
    på det niveau. Procesejerskab samles fra RACI. Kun funktioner/enheder — aldrig navne.
+   Samarbejdsmodel er fjernet igen (nov. 2026).
    ============================================================ */
 const KAT={title:'FF67817F',group:'FFB9C7C2',head:'FF30373B',ydelse:'FFE3E9E7',line:'FFA8A5A1',ink:'FF1F1F23',white:'FFFFFFFF'};
 const KAT_NAME='Uddannelsesadministrationen';
@@ -2173,10 +2169,10 @@ async function downloadYdelseskatalog(){
 
     /* ---------- fane 2: Ydelsesbeskrivelser ---------- */
     const COLS=[['Ydelse',22],['Delydelse',32],['Ydelsens formål',36],['Uddybende beskrivelse',46],['Kanaler (ind)',22],
-      ['Ydelsens målgruppe',24],['Rolle/ansvar – koncernniveau',46],['Rolle/ansvar – Campus',45],['Rolle/ansvar – FAK/institut',45],['Samarbejdsmodel',20],['Procesejerskab',30],
+      ['Ydelsens målgruppe',24],['Rolle/ansvar – koncernniveau',46],['Rolle/ansvar – Campus',45],['Rolle/ansvar – FAK/institut',45],['Procesejerskab',30],
       ['Dokumentation af ydelse',24],['Ensartet opgaveløsning på tværs af campusadministrationer',34],['Type',24],['Noter',50]];
-    const GROUPS=[['Beskrivelse',1,5],['Ansvar og organisering',6,11],['Modenhed og standardisering',12,13],['Typer og noter',14,15]];
-    const NC=COLS.length;
+    const GROUPS=[['Beskrivelse',1,5],['Ansvar og organisering',6,10],['Modenhed og standardisering',11,12],['Typer og noter',13,14]];
+    const NC=COLS.length,TYPE_COL=13;
     const ws=wb.addWorksheet('Ydelsesbeskrivelser',{views:[{state:'frozen',xSplit:2,ySplit:5,showGridLines:false,zoomScale:90}],pageSetup:page});
     ws.columns=COLS.map(([,w])=>({width:w}));
     ws.mergeCells(1,1,1,NC);ws.mergeCells(2,1,2,NC);
@@ -2188,19 +2184,19 @@ async function downloadYdelseskatalog(){
       for(let i=a;i<=b;i++){const x=ws.getCell(4,i);x.fill=fill(KAT.group);x.border=border;x.font=F(10,{bold:true});x.alignment={horizontal:'center',vertical:'middle',wrapText:true};}});
     ws.getRow(4).height=19.5;
     COLS.forEach(([t],i)=>{const c=ws.getCell(5,i+1);head(c);c.value=t;});ws.getRow(5).height=33;
-    /* fane 3: Lister — bruges som dropdowns i Samarbejdsmodel, Dokumentation, Ensartet og Type */
+    /* fane 3: Lister — bruges som dropdowns i Dokumentation, Ensartet og Type */
     const LISTS=[['Dokumentation af ydelse - muligheder',DOK_VALUES.map(x=>lvlText(DOK_VALUES,x.v))],
       ['Ensartet opgaveløsning - muligheder',ENS_VALUES.map(x=>lvlText(ENS_VALUES,x.v))],
-      ['Samarbejdsmodel - muligheder',SAM_VALUES],['Ydelseskategori - muligheder',TYPE_VALUES.map(x=>x.v)]];
-    const listRef=i=>{const L='ABCD'[i];return `Lister!$${L}$2:$${L}$${1+LISTS[i][1].length}`;};
-    const DV={10:2,12:0,13:1,14:3};   /* kolonne → liste */
+      ['Ydelseskategori - muligheder',TYPE_VALUES.map(x=>x.v)]];
+    const listRef=i=>{const L='ABC'[i];return `Lister!$${L}$2:$${L}$${1+LISTS[i][1].length}`;};
+    const DV={11:0,12:1,13:2};   /* kolonne → liste */
     let r=6;
     yd.forEach(y=>{
       const start=r;
       (y.mains.length?y.mains:[null]).forEach(d=>{
         const m=d&&d.m;
         const vals=m?[y.name,d.name,m.formaal,m.beskrivelse,mainTerms(m,'kanaler'),mainTerms(m,'maalgruppe'),
-          ...ROLE_LEVELS.map(([lv,f])=>katRoleText(m,lv,f)),m.samarbejde,katOwners(m),
+          ...ROLE_LEVELS.map(([lv,f])=>katRoleText(m,lv,f)),katOwners(m),
           lvlText(DOK_VALUES,mainLevel(m,'dok')),lvlText(ENS_VALUES,mainLevel(m,'ens')),m.type,m.noter]:[y.name];
         let lines=2;
         for(let i=1;i<=NC;i++){
@@ -2209,7 +2205,7 @@ async function downloadYdelseskatalog(){
           c.border=border;
           if(m&&DV[i]!=null)c.dataValidation={type:'list',allowBlank:true,formulae:[listRef(DV[i])]};
         }
-        const t=m&&typeOf(m.type);if(t)ws.getCell(r,14).fill=fill(t.fill);
+        const t=m&&typeOf(m.type);if(t)ws.getCell(r,TYPE_COL).fill=fill(t.fill);
         ws.getRow(r).height=Math.min(409,Math.max(30,lines*12.5+8));
         r++;
       });
@@ -2289,7 +2285,7 @@ function importXLSX(file){if(!canEdit())return showLogin();
           const m={id:mid||newId('h'),area:aid,title:mt,type:typeOf(ty)?ty:(forud?FORUD_TYPE:''),forud:typeOf(ty)?ty===FORUD_TYPE:forud,
             formaal:str(x['Ydelsens formål']),beskrivelse:str(x['Uddybende beskrivelse']||x['Beskrivelse']),kanaler:str(x['Kanaler']),maalgruppe:str(x['Ydelsens målgruppe']),
             rolleKoncern:str(x['Rolle/ansvar – koncernniveau']),rolleCampus:str(x['Rolle/ansvar – Campus']),rolleFak:str(x['Rolle/ansvar – FAK/institut']),
-            samarbejde:SAM_VALUES.includes(str(x['Samarbejdsmodel']))?str(x['Samarbejdsmodel']):'',noter:str(x['Noter']),
+            noter:str(x['Noter']),
             dok:lvlParse(x['Dokumentation af ydelse']),ens:lvlParse(x['Ensartet opgaveløsning vedr. ydelse'])};
           nd.mains.push(m);mainByKey[(aid+'|'+mt.toLowerCase())]=m.id;});
       }
@@ -2557,7 +2553,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawer();close
    ============================================================ */
 const BASE_TITLE=document.title;
 const slugify=s=>String(s||'').toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'oe').replace(/å/g,'aa').replace(/\+/g,' plus ')
-  .normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  .normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 /* slug ud fra enhedens navn; ID'et bruges, hvis navnet er tomt eller deles med en anden enhed */
 function unitSlug(uid){
   const s=slugify(rawAnyName(uid));
